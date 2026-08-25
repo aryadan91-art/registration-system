@@ -1,6 +1,5 @@
 const express = require('express');
 const cors = require('cors');
-const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const db = require('./database');
 const path = require('path');
@@ -8,19 +7,7 @@ const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 10000;
 
-// ==================== Middleware (اصلاح شده) ====================
-app.use(helmet({
-  crossOriginResourcePolicy: { policy: "cross-origin" },
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'"],
-      styleSrc: ["'self'", "'unsafe-inline'"],
-      imgSrc: ["'self'", "data:", "https:"],
-    }
-  }
-}));
-
+// ==================== Middleware ====================
 // تنظیمات CORS
 app.use(cors({
   origin: '*',
