@@ -1,51 +1,129 @@
-const { Pool } = require('pg');
+const mongoose = require('mongoose');
 
-const pool = new Pool({
-  connectionString: 'postgresql://postgres:LrF3Tj5tvZnUHuEE@db.zdfizkafdmwppjdakahb.supabase.co:5432/postgres',
-  ssl: { rejectUnauthorized: false },
-  max: 10,
-  idleTimeoutMillis: 10000,
-  connectionTimeoutMillis: 2000,
-});
+// ============================================
+// رشته اتصال MongoDB (با اطلاعات شما)
+// ============================================
+const MONGODB_URI = 'mongodb+srv://aryadan91_db_user:Jqc4uOZR3r5hDxjf@cluster0.taysa7o.mongodb.net/registrationDB?retryWrites=true&w=majority&appName=Cluster0';
 
-async function initDB() {
+let isConnected = false;
+
+async function connectDB() {
+  if (isConnected) {
+    console.log('✅ قبلاً به MongoDB متصل هستیم');
+    return;
+  }
+
   try {
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS registrations (
-        id SERIAL PRIMARY KEY,
-        firstName TEXT NOT NULL,
-        lastName TEXT NOT NULL,
-        normalizedFirst TEXT NOT NULL,
-        normalizedLast TEXT NOT NULL,
-        selectedOption TEXT NOT NULL,
-        deviceId TEXT NOT NULL,
-        ipAddress TEXT,
-        submittedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
-
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS settings (
-        key TEXT PRIMARY KEY,
-        value TEXT NOT NULL
-      )
-    `);
-
-    await pool.query(`CREATE INDEX IF NOT EXISTS idx_normalized_names ON registrations (normalizedFirst, normalizedLast)`);
-    await pool.query(`CREATE INDEX IF NOT EXISTS idx_device_id ON registrations (deviceId)`);
-    await pool.query(`CREATE INDEX IF NOT EXISTS idx_submitted_at ON registrations (submittedAt DESC)`);
-
-    const res = await pool.query("SELECT * FROM settings WHERE key = 'maxCapacity'");
-    if (res.rows.length === 0) {
-      await pool.query("INSERT INTO settings (key, value) VALUES ('maxCapacity', '60')");
-      await pool.query("INSERT INTO settings (key, value) VALUES ('deadline', '')");
-    }
-    
-    console.log('✅ اتصال به Supabase با موفقیت برقرار شد!');
+    await mongoose.connect(MONGODB_URI, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+      maxPoolSize: 10,
+      serverSelectionTimeoutMS: 5000,
+      socketTimeoutMS: 45000,
+    });
+    isConnected = true;
+    console.log('✅ اتصال به MongoDB با موفقیت برقرار شد!');
   } catch (error) {
-    console.error('❌ خطا در اتصال به Supabase:', error.message);
+    console.error('❌ خطا در اتصال به MongoDB:', error.message);
+    throw error;
   }
 }
 
+// ============================================
+// مدل‌های دیتابیس
+// ============================================
+
+const registrationSchema = new mongoose.Schema({
+  firstName: { type: String, required: true },
+  lastName: { type: String, required: true },
+  normalizedFirst: { type: String, required: true },
+  normalizedLast: { type: String, required: true },
+  selectedOption: { type: String, required: true },
+  deviceId: { type: String, required: true, unique: true },
+  ipAddress: { type: String },
+  submittedAt: { type: Date, default: Date.now }
+});
+
+// ایندکس‌ها برای سرعت
+registrationSchema.index({ normalizedFirst: 1, normalizedLast: 1 });
+registrationSchema.index({ deviceId: 1 });
+registrationSchema.index({ submittedAt: -1 });
+
+const settingsSchema = new mongoose.Schema({
+  key: { type: String, unique: true },
+  value: { type: String }
+});
+
+const Registration = mongoose.model('Registration', registrationSchema);
+const Setting = mongoose.model('Setting', settingsSchema);
+
+// ============================================
+// توابع کمکی
+// ============================================
+
+async function getSettings() {
+  const settings = await Setting.find();
+  const result = {};
+  settings.forEach(s => { result[s.key] = s.value; });
+  return result;
+}
+
+async function getCount() {
+  return await Registration.countDocuments();
+}
+
+async function getAllRegistrations() {
+  return await Registration.find().sort({ submittedAt: -1 }).limit(100);
+}
+
+async function addRegistration(data) {
+  const reg = new Registration(data);
+  await reg.save();
+  return reg;
+}
+
+async function checkDuplicate(normalizedFirst, normalizedLast) {
+  return await Registration.findOne({ normalizedFirst, normalizedLast });
+}
+
+async function checkDevice(deviceId) {
+  return await Registration.findOne({ deviceId });
+}
+
+async function updateSettings(key, value) {
+  await Setting.findOneAndUpdate(
+    { key },
+    { key, value },
+    { upsert: true }
+  );
+}
+
+// ============================================
+// مقداردهی اولیه
+// ============================================
+
+async function initDB() {
+  await connectDB();
+  
+  // تنظیمات پیش‌فرض
+  const maxCapacity = await Setting.findOne({ key: 'maxCapacity' });
+  if (!maxCapacity) {
+    await Setting.create({ key: 'maxCapacity', value: '60' });
+    await Setting.create({ key: 'deadline', value: '' });
+  }
+  
+  console.log('✅ دیتابیس MongoDB آماده است!');
+}
+
 initDB();
-module.exports = pool;
+
+module.exports = {
+  connectDB,
+  getSettings,
+  getCount,
+  getAllRegistrations,
+  addRegistration,
+  checkDuplicate,
+  checkDevice,
+  updateSettings
+};
