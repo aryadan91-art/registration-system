@@ -4,8 +4,6 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <meta name="theme-color" content="#667eea" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <title>سیستم ثبت‌نام آنلاین</title>
     <style>
         * {
@@ -380,10 +378,10 @@
             </select>
         </div>
         
-        <button class="btn" id="submitBtn" onclick="submitRegistration()">ثبت‌نام</button>
+        <button class="btn" id="submitBtn">ثبت‌نام</button>
         
         <div class="admin-link">
-            <a onclick="showAdminLogin()">🔐 ورود به پنل مدیریت</a>
+            <a id="adminLoginLink">🔐 ورود به پنل مدیریت</a>
         </div>
         
         <div style="text-align:center;font-size:13px;color:#888;margin-top:12px;">
@@ -395,13 +393,13 @@
     <div id="adminPanel" class="admin-panel">
         <div class="admin-header">
             <h2>👑 پنل مدیریت</h2>
-            <button class="btn-small" onclick="logoutAdmin()">خروج</button>
+            <button class="btn-small" id="logoutBtn">خروج</button>
         </div>
 
         <div id="adminLogin" class="login-box">
             <h3 style="margin-bottom:16px;">ورود به پنل مدیریت</h3>
             <input type="password" id="adminPassword" placeholder="رمز عبور را وارد کنید" inputmode="text" />
-            <button class="btn" style="max-width:200px;margin:10px auto;" onclick="checkAdminLogin()">ورود</button>
+            <button class="btn" id="adminLoginBtn" style="max-width:200px;margin:10px auto;">ورود</button>
         </div>
 
         <div id="adminDashboard" style="display:none;">
@@ -415,12 +413,12 @@
                     <label>تاریخ انقضا</label>
                     <input type="datetime-local" id="deadline" />
                 </div>
-                <button class="btn" style="margin-top:10px;padding:12px;font-size:16px;" onclick="saveSettings()">ذخیره تنظیمات</button>
+                <button class="btn" id="saveSettingsBtn" style="margin-top:10px;padding:12px;font-size:16px;">ذخیره تنظیمات</button>
             </div>
 
             <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin:16px 0;">
                 <h3 style="font-size:16px;">📊 لیست ثبت‌نام‌کنندگان (<span id="countDisplay">0</span> نفر)</h3>
-                <button class="btn-small green" onclick="exportExcel()">📥 خروجی Excel</button>
+                <button class="btn-small green" id="exportBtn">📥 خروجی Excel</button>
             </div>
             <div style="overflow-x:auto;border-radius:12px;border:1px solid #e0e0e0;">
                 <table>
@@ -461,11 +459,49 @@
     }
 
     // ============================================
+    // تابع کمکی برای fetch با timeout
+    // ============================================
+    async function fetchWithTimeout(url, options = {}, timeout = 15000) {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), timeout);
+        
+        try {
+            const response = await fetch(url, {
+                ...options,
+                signal: controller.signal
+            });
+            clearTimeout(timeoutId);
+            return response;
+        } catch (error) {
+            clearTimeout(timeoutId);
+            throw error;
+        }
+    }
+
+    // ============================================
+    // تست اتصال به API
+    // ============================================
+    async function testAPI() {
+        try {
+            const response = await fetchWithTimeout(API_BASE + '/test');
+            if (response.ok) {
+                const data = await response.json();
+                console.log('✅ API متصل است:', data);
+                return true;
+            }
+        } catch (error) {
+            console.error('❌ API در دسترس نیست:', error);
+            showMessage('❌ سرور در دسترس نیست! لطفاً صفحه را رفرش کنید.', 'error');
+            return false;
+        }
+    }
+
+    // ============================================
     // CHECK STATUS
     // ============================================
     async function checkStatus() {
         try {
-            const response = await fetch(API_BASE + '/status');
+            const response = await fetchWithTimeout(API_BASE + '/status');
             const data = await response.json();
             
             const badge = document.getElementById('statusBadge');
@@ -491,63 +527,76 @@
     // SUBMIT REGISTRATION
     // ============================================
     async function submitRegistration() {
-    console.log('✅ ثبت‌نام شروع شد');
-    const firstName = document.getElementById('firstName').value;
-    const lastName = document.getElementById('lastName').value;
-    const selectedOption = document.getElementById('selectedOption').value;
-    const messageEl = document.getElementById('statusMessage');
+        console.log('✅ ثبت‌نام شروع شد');
+        const firstName = document.getElementById('firstName').value;
+        const lastName = document.getElementById('lastName').value;
+        const selectedOption = document.getElementById('selectedOption').value;
+        const messageEl = document.getElementById('statusMessage');
 
-    messageEl.className = 'message';
-    messageEl.style.display = 'none';
+        messageEl.className = 'message';
+        messageEl.style.display = 'none';
 
-    if (!firstName.trim() || !lastName.trim()) {
-        showMessage('لطفاً نام و نام خانوادگی را وارد کنید.', 'error');
-        return;
-    }
-
-    const submitBtn = document.getElementById('submitBtn');
-    submitBtn.disabled = true;
-    submitBtn.textContent = 'در حال ثبت...';
-
-    // گرفتن DeviceID با لاگ
-    const deviceId = getDeviceId();
-    console.log('📱 DeviceID:', deviceId);
-
-    try {
-        const response = await fetch(API_BASE + '/register', {
-            method: 'POST',
-            headers: { 
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
-            },
-            body: JSON.stringify({
-                firstName: firstName.trim(),
-                lastName: lastName.trim(),
-                selectedOption: selectedOption,
-                deviceId: deviceId
-            })
-        });
-
-        console.log('📡 وضعیت پاسخ:', response.status);
-        const data = await response.json();
-        console.log('📦 داده پاسخ:', data);
-
-        if (response.ok) {
-            showMessage('✅ ثبت‌نام شما با موفقیت انجام شد!', 'success');
-            document.getElementById('firstName').value = '';
-            document.getElementById('lastName').value = '';
-            await checkStatus();
-        } else {
-            showMessage('❌ ' + data.error, 'error');
+        if (!firstName.trim() || !lastName.trim()) {
+            showMessage('لطفاً نام و نام خانوادگی را وارد کنید.', 'error');
+            return;
         }
-    } catch (error) {
-        console.error('❌ خطا در ثبت‌نام:', error);
-        showMessage('❌ خطا در ارتباط با سرور!', 'error');
-    } finally {
-        submitBtn.disabled = false;
-        submitBtn.textContent = 'ثبت‌نام';
+
+        const submitBtn = document.getElementById('submitBtn');
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'در حال ثبت...';
+
+        const deviceId = getDeviceId();
+        console.log('📱 DeviceID:', deviceId);
+
+        try {
+            const response = await fetchWithTimeout(API_BASE + '/register', {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({
+                    firstName: firstName.trim(),
+                    lastName: lastName.trim(),
+                    selectedOption: selectedOption,
+                    deviceId: deviceId
+                })
+            });
+
+            console.log('📡 وضعیت پاسخ:', response.status);
+            const data = await response.json();
+            console.log('📦 داده پاسخ:', data);
+
+            if (response.ok) {
+                showMessage('✅ ثبت‌نام شما با موفقیت انجام شد!', 'success');
+                document.getElementById('firstName').value = '';
+                document.getElementById('lastName').value = '';
+                await checkStatus();
+            } else {
+                showMessage('❌ ' + data.error, 'error');
+            }
+        } catch (error) {
+            if (error.name === 'AbortError') {
+                showMessage('❌ زمان درخواست به پایان رسید. دوباره تلاش کنید.', 'error');
+            } else {
+                console.error('❌ خطا در ثبت‌نام:', error);
+                showMessage('❌ خطا در ارتباط با سرور!', 'error');
+            }
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'ثبت‌نام';
+        }
     }
-}
+
+    function showMessage(text, type) {
+        const messageEl = document.getElementById('statusMessage');
+        messageEl.textContent = text;
+        messageEl.className = 'message ' + type;
+        messageEl.style.display = 'block';
+        setTimeout(() => {
+            messageEl.style.display = 'none';
+        }, 6000);
+    }
 
     // ============================================
     // ADMIN PANEL
@@ -584,7 +633,7 @@
     async function loadAdminData() {
         console.log('✅ بارگذاری اطلاعات مدیریت');
         try {
-            const regResponse = await fetch(API_BASE + '/admin/registrations', {
+            const regResponse = await fetchWithTimeout(API_BASE + '/admin/registrations', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ password: '1234' })
@@ -613,7 +662,7 @@
                 `).join('');
             }
 
-            const statusResponse = await fetch(API_BASE + '/status');
+            const statusResponse = await fetchWithTimeout(API_BASE + '/status');
             const statusData = await statusResponse.json();
             document.getElementById('maxCapacity').value = statusData.maxCapacity || 100;
             if (statusData.deadline) {
@@ -637,7 +686,7 @@
         }
 
         try {
-            const response = await fetch(API_BASE + '/admin/settings', {
+            const response = await fetchWithTimeout(API_BASE + '/admin/settings', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -655,14 +704,18 @@
                 alert('❌ ' + data.error);
             }
         } catch (error) {
-            alert('❌ خطا در ذخیره تنظیمات: ' + error.message);
+            if (error.name === 'AbortError') {
+                alert('❌ زمان درخواست به پایان رسید. دوباره تلاش کنید.');
+            } else {
+                alert('❌ خطا در ذخیره تنظیمات: ' + error.message);
+            }
         }
     }
 
     async function exportExcel() {
         console.log('✅ خروجی Excel');
         try {
-            const response = await fetch(API_BASE + '/admin/export', {
+            const response = await fetchWithTimeout(API_BASE + '/admin/export', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ password: '1234' })
@@ -694,74 +747,13 @@
             document.body.removeChild(link);
 
         } catch (error) {
-            alert('❌ خطا در خروجی: ' + error.message);
+            if (error.name === 'AbortError') {
+                alert('❌ زمان درخواست به پایان رسید. دوباره تلاش کنید.');
+            } else {
+                alert('❌ خطا در خروجی: ' + error.message);
+            }
         }
     }
 
     // ============================================
     // اتصال همه دکمه‌ها بعد از بارگذاری کامل صفحه
-    // ============================================
-    document.addEventListener('DOMContentLoaded', function() {
-        console.log('✅ صفحه بارگذاری شد، اتصال دکمه‌ها...');
-        
-        // دکمه ثبت‌نام
-        const submitBtn = document.getElementById('submitBtn');
-        if (submitBtn) {
-            submitBtn.addEventListener('click', submitRegistration);
-            console.log('✅ دکمه ثبت‌نام متصل شد');
-        }
-
-        // لینک ورود به پنل مدیریت
-        const adminLink = document.getElementById('adminLoginLink');
-        if (adminLink) {
-            adminLink.addEventListener('click', showAdminLogin);
-            console.log('✅ لینک ورود به پنل متصل شد');
-        }
-
-        // دکمه ورود به پنل مدیریت (داخل پنل)
-        const adminLoginBtn = document.querySelector('#adminLogin .btn');
-        if (adminLoginBtn) {
-            adminLoginBtn.addEventListener('click', checkAdminLogin);
-            console.log('✅ دکمه ورود به پنل متصل شد');
-        }
-
-        // دکمه خروج از پنل
-        const logoutBtn = document.querySelector('.admin-header .btn-small');
-        if (logoutBtn) {
-            logoutBtn.addEventListener('click', logoutAdmin);
-            console.log('✅ دکمه خروج متصل شد');
-        }
-
-        // دکمه ذخیره تنظیمات
-        const saveSettingsBtn = document.querySelector('.settings-box .btn');
-        if (saveSettingsBtn) {
-            saveSettingsBtn.addEventListener('click', saveSettings);
-            console.log('✅ دکمه ذخیره تنظیمات متصل شد');
-        }
-
-        // دکمه خروجی Excel
-        const exportBtn = document.querySelector('.btn-small.green');
-        if (exportBtn) {
-            exportBtn.addEventListener('click', exportExcel);
-            console.log('✅ دکمه خروجی Excel متصل شد');
-        }
-
-        // بارگذاری اولیه
-        checkStatus();
-    });
-
-    // ============================================
-    // KEYBOARD SHORTCUT
-    // ============================================
-    document.addEventListener('keydown', function(e) {
-        if (e.ctrlKey && e.shiftKey && (e.key === 'A' || e.key === 'a')) {
-            e.preventDefault();
-            showAdminLogin();
-        }
-    });
-
-    console.log('🔐 سیستم ثبت‌نام آنلاین بارگذاری شد.');
-    console.log('📋 برای ورود به پنل مدیریت از Ctrl+Shift+A استفاده کنید.');
-</script>
-</body>
-</html>
