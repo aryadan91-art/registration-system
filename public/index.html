@@ -459,9 +459,9 @@
     }
 
     // ============================================
-    // تابع کمکی برای fetch با timeout
+    // تابع کمکی برای fetch با timeout 10 ثانیه
     // ============================================
-    async function fetchWithTimeout(url, options = {}, timeout = 15000) {
+    async function fetchWithTimeout(url, options = {}, timeout = 10000) {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), timeout);
         
@@ -640,7 +640,8 @@
             });
             
             if (!regResponse.ok) {
-                throw new Error('خطا در دریافت اطلاعات');
+                const errorData = await regResponse.json();
+                throw new Error(errorData.error || 'خطا در دریافت اطلاعات');
             }
             
             const regData = await regResponse.json();
@@ -671,7 +672,11 @@
 
         } catch (error) {
             console.error('Load admin data error:', error);
-            alert('❌ خطا در بارگذاری اطلاعات: ' + error.message);
+            if (error.name === 'AbortError') {
+                alert('❌ زمان درخواست به پایان رسید. لطفاً دوباره تلاش کنید.');
+            } else {
+                alert('❌ خطا در بارگذاری اطلاعات: ' + error.message);
+            }
         }
     }
 
