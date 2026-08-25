@@ -302,13 +302,18 @@ app.post('/api/admin/export', async (req, res) => {
   }
 });
 
+// ==================== تست API (برای دیباگ) ====================
+app.get('/api/test', (req, res) => {
+  res.json({ status: 'API is working!', time: new Date().toISOString() });
+});
+
 // مسیر پیش‌فرض
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 // ==================== شروع سرور ====================
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`✅ سرور با موفقیت روی پورت ${PORT} اجرا شد!`);
   console.log(`🌐 آدرس: http://localhost:${PORT}`);
 });
