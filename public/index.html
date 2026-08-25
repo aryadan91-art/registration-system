@@ -491,64 +491,63 @@
     // SUBMIT REGISTRATION
     // ============================================
     async function submitRegistration() {
-        console.log('✅ ثبت‌نام شروع شد');
-        const firstName = document.getElementById('firstName').value;
-        const lastName = document.getElementById('lastName').value;
-        const selectedOption = document.getElementById('selectedOption').value;
-        const messageEl = document.getElementById('statusMessage');
+    console.log('✅ ثبت‌نام شروع شد');
+    const firstName = document.getElementById('firstName').value;
+    const lastName = document.getElementById('lastName').value;
+    const selectedOption = document.getElementById('selectedOption').value;
+    const messageEl = document.getElementById('statusMessage');
 
-        messageEl.className = 'message';
-        messageEl.style.display = 'none';
+    messageEl.className = 'message';
+    messageEl.style.display = 'none';
 
-        if (!firstName.trim() || !lastName.trim()) {
-            showMessage('لطفاً نام و نام خانوادگی را وارد کنید.', 'error');
-            return;
-        }
-
-        const submitBtn = document.getElementById('submitBtn');
-        submitBtn.disabled = true;
-        submitBtn.textContent = 'در حال ثبت...';
-
-        try {
-            const response = await fetch(API_BASE + '/register', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    firstName: firstName.trim(),
-                    lastName: lastName.trim(),
-                    selectedOption: selectedOption,
-                    deviceId: getDeviceId()
-                })
-            });
-
-            const data = await response.json();
-
-            if (response.ok) {
-                showMessage('✅ ثبت‌نام شما با موفقیت انجام شد!', 'success');
-                document.getElementById('firstName').value = '';
-                document.getElementById('lastName').value = '';
-                await checkStatus();
-            } else {
-                showMessage('❌ ' + data.error, 'error');
-            }
-        } catch (error) {
-            console.error('Submit error:', error);
-            showMessage('❌ خطا در ارتباط با سرور!', 'error');
-        } finally {
-            submitBtn.disabled = false;
-            submitBtn.textContent = 'ثبت‌نام';
-        }
+    if (!firstName.trim() || !lastName.trim()) {
+        showMessage('لطفاً نام و نام خانوادگی را وارد کنید.', 'error');
+        return;
     }
 
-    function showMessage(text, type) {
-        const messageEl = document.getElementById('statusMessage');
-        messageEl.textContent = text;
-        messageEl.className = 'message ' + type;
-        messageEl.style.display = 'block';
-        setTimeout(() => {
-            messageEl.style.display = 'none';
-        }, 6000);
+    const submitBtn = document.getElementById('submitBtn');
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'در حال ثبت...';
+
+    // گرفتن DeviceID با لاگ
+    const deviceId = getDeviceId();
+    console.log('📱 DeviceID:', deviceId);
+
+    try {
+        const response = await fetch(API_BASE + '/register', {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({
+                firstName: firstName.trim(),
+                lastName: lastName.trim(),
+                selectedOption: selectedOption,
+                deviceId: deviceId
+            })
+        });
+
+        console.log('📡 وضعیت پاسخ:', response.status);
+        const data = await response.json();
+        console.log('📦 داده پاسخ:', data);
+
+        if (response.ok) {
+            showMessage('✅ ثبت‌نام شما با موفقیت انجام شد!', 'success');
+            document.getElementById('firstName').value = '';
+            document.getElementById('lastName').value = '';
+            await checkStatus();
+        } else {
+            showMessage('❌ ' + data.error, 'error');
+        }
+    } catch (error) {
+        console.error('❌ خطا در ثبت‌نام:', error);
+        showMessage('❌ خطا در ارتباط با سرور!', 'error');
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'ثبت‌نام';
     }
+}
 
     // ============================================
     // ADMIN PANEL
