@@ -1,7 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const rateLimit = require('express-rate-limit');
-const db = require('./database');
+const pool = require('./database');
 const path = require('path');
 
 const app = express();
@@ -38,35 +38,21 @@ function normalizeText(text) {
     .replace(/ة/g, 'ه');
 }
 
-function getSettings() {
-  return new Promise((resolve, reject) => {
-    db.all("SELECT key, value FROM settings", (err, rows) => {
-      if (err) {
-        reject(err);
-        return;
-      }
-      const settings = {};
-      rows.forEach(row => {
-        settings[row.key] = row.value;
-      });
-      resolve(settings);
-    });
+async function getSettings() {
+  const result = await pool.query("SELECT key, value FROM settings");
+  const settings = {};
+  result.rows.forEach(row => {
+    settings[row.key] = row.value;
   });
+  return settings;
 }
 
 async function isRegistrationOpen() {
   const settings = await getSettings();
-  const maxCapacity = parseInt(settings.maxCapacity) || 100;
+  const maxCapacity = parseInt(settings.maxcapacity) || 100;
   
-  const count = await new Promise((resolve, reject) => {
-    db.get("SELECT COUNT(*) as count FROM registrations", (err, row) => {
-      if (err) {
-        reject(err);
-        return;
-      }
-      resolve(row.count);
-    });
-  });
+  const countResult = await pool.query("SELECT COUNT(*) as count FROM registrations");
+  const count = parseInt(countResult.rows[0].count);
 
   if (count >= maxCapacity) {
     return { open: false, reason: 'ظرفیت ثبت‌نام تکمیل شده است.' };
@@ -89,20 +75,13 @@ app.get('/api/status', async (req, res) => {
   try {
     const status = await isRegistrationOpen();
     const settings = await getSettings();
-    const count = await new Promise((resolve, reject) => {
-      db.get("SELECT COUNT(*) as count FROM registrations", (err, row) => {
-        if (err) {
-          reject(err);
-          return;
-        }
-        resolve(row.count);
-      });
-    });
+    const countResult = await pool.query("SELECT COUNT(*) as count FROM registrations");
+    const count = parseInt(countResult.rows[0].count);
 
     res.json({
       ...status,
       currentCount: count,
-      maxCapacity: parseInt(settings.maxCapacity) || 100,
+      maxCapacity: parseInt(settings.maxcapacity) || 100,
       deadline: settings.deadline || null
     });
   } catch (error) {
@@ -119,74 +98,46 @@ app.post('/api/register', async (req, res) => {
     const ipAddress = req.ip || req.connection.remoteAddress || 'unknown';
 
     if (!firstName || !lastName || !selectedOption || !deviceId) {
-      console.log('❌ فیلدهای الزامی وجود ندارند');
       return res.status(400).json({ error: 'همه فیلدها الزامی هستند.' });
     }
 
     const status = await isRegistrationOpen();
     if (!status.open) {
-      console.log('❌ ثبت‌نام بسته است:', status.reason);
       return res.status(400).json({ error: status.reason });
     }
 
     const normalizedFirst = normalizeText(firstName);
     const normalizedLast = normalizeText(lastName);
 
-    const duplicate = await new Promise((resolve, reject) => {
-      db.get(
-        "SELECT * FROM registrations WHERE normalizedFirst = ? AND normalizedLast = ?",
-        [normalizedFirst, normalizedLast],
-        (err, row) => {
-          if (err) {
-            reject(err);
-            return;
-          }
-          resolve(row);
-        }
-      );
-    });
+    // بررسی تکراری
+    const duplicateCheck = await pool.query(
+      "SELECT * FROM registrations WHERE normalizedFirst = $1 AND normalizedLast = $2",
+      [normalizedFirst, normalizedLast]
+    );
 
-    if (duplicate) {
-      console.log('❌ نام تکراری:', firstName, lastName);
+    if (duplicateCheck.rows.length > 0) {
       return res.status(400).json({ error: 'این نام قبلاً ثبت شده است!' });
     }
 
-    const deviceUsed = await new Promise((resolve, reject) => {
-      db.get(
-        "SELECT * FROM registrations WHERE deviceId = ?",
-        [deviceId],
-        (err, row) => {
-          if (err) {
-            reject(err);
-            return;
-          }
-          resolve(row);
-        }
-      );
-    });
+    // بررسی دستگاه
+    const deviceCheck = await pool.query(
+      "SELECT * FROM registrations WHERE deviceId = $1",
+      [deviceId]
+    );
 
-    if (deviceUsed) {
-      console.log('❌ دستگاه تکراری:', deviceId);
+    if (deviceCheck.rows.length > 0) {
       return res.status(400).json({ error: 'این دستگاه قبلاً ثبت‌نام کرده است!' });
     }
 
-    await new Promise((resolve, reject) => {
-      db.run(
-        `INSERT INTO registrations 
-         (firstName, lastName, normalizedFirst, normalizedLast, selectedOption, deviceId, ipAddress) 
-         VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        [firstName.trim(), lastName.trim(), normalizedFirst, normalizedLast, selectedOption, deviceId, ipAddress],
-        function(err) {
-          if (err) {
-            reject(err);
-            return;
-          }
-          console.log('✅ ثبت‌نام جدید با ID:', this.lastID);
-          resolve(this.lastID);
-        }
-      );
-    });
+    // ذخیره در دیتابیس
+    await pool.query(
+      `INSERT INTO registrations 
+       (firstName, lastName, normalizedFirst, normalizedLast, selectedOption, deviceId, ipAddress) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+      [firstName.trim(), lastName.trim(), normalizedFirst, normalizedLast, selectedOption, deviceId, ipAddress]
+    );
 
+    console.log('✅ ثبت‌نام جدید ذخیره شد');
     res.json({ success: true, message: '✅ ثبت‌نام با موفقیت انجام شد!' });
 
   } catch (error) {
@@ -202,20 +153,11 @@ app.post('/api/admin/registrations', async (req, res) => {
       return res.status(401).json({ error: 'رمز عبور اشتباه است!' });
     }
 
-    const registrations = await new Promise((resolve, reject) => {
-      db.all(
-        "SELECT id, firstName, lastName, selectedOption, submittedAt FROM registrations ORDER BY id DESC",
-        (err, rows) => {
-          if (err) {
-            reject(err);
-            return;
-          }
-          resolve(rows);
-        }
-      );
-    });
+    const result = await pool.query(
+      "SELECT id, firstName, lastName, selectedOption, submittedAt FROM registrations ORDER BY id DESC"
+    );
 
-    res.json({ registrations });
+    res.json({ registrations: result.rows });
   } catch (error) {
     console.error('❌ Error in /api/admin/registrations:', error);
     res.status(500).json({ error: 'خطای سرور: ' + error.message });
@@ -228,49 +170,28 @@ app.post('/api/admin/settings', async (req, res) => {
     
     const { password, maxCapacity, deadline } = req.body;
     if (password !== '1234') {
-      console.log('❌ رمز عبور اشتباه');
       return res.status(401).json({ error: 'رمز عبور اشتباه است!' });
     }
 
     if (maxCapacity && parseInt(maxCapacity) > 0) {
-      await new Promise((resolve, reject) => {
-        db.run(
-          "UPDATE settings SET value = ? WHERE key = 'maxCapacity'",
-          [maxCapacity.toString()],
-          (err) => {
-            if (err) {
-              console.error('❌ خطا در بروزرسانی ظرفیت:', err);
-              reject(err);
-              return;
-            }
-            console.log('✅ ظرفیت بروزرسانی شد:', maxCapacity);
-            resolve();
-          }
-        );
-      });
+      await pool.query(
+        "UPDATE settings SET value = $1 WHERE key = 'maxCapacity'",
+        [maxCapacity.toString()]
+      );
+      console.log('✅ ظرفیت بروزرسانی شد:', maxCapacity);
     }
 
     if (deadline !== undefined) {
-      await new Promise((resolve, reject) => {
-        db.run(
-          "UPDATE settings SET value = ? WHERE key = 'deadline'",
-          [deadline || ''],
-          (err) => {
-            if (err) {
-              console.error('❌ خطا در بروزرسانی تاریخ:', err);
-              reject(err);
-              return;
-            }
-            console.log('✅ تاریخ بروزرسانی شد:', deadline);
-            resolve();
-          }
-        );
-      });
+      await pool.query(
+        "UPDATE settings SET value = $1 WHERE key = 'deadline'",
+        [deadline || '']
+      );
+      console.log('✅ تاریخ بروزرسانی شد:', deadline);
     }
 
     res.json({ success: true, message: '✅ تنظیمات ذخیره شد!' });
   } catch (error) {
-    console.error('❌ خطای کلی در ذخیره تنظیمات:', error);
+    console.error('❌ خطا در ذخیره تنظیمات:', error);
     res.status(500).json({ error: 'خطای سرور: ' + error.message });
   }
 });
@@ -282,27 +203,18 @@ app.post('/api/admin/export', async (req, res) => {
       return res.status(401).json({ error: 'رمز عبور اشتباه است!' });
     }
 
-    const registrations = await new Promise((resolve, reject) => {
-      db.all(
-        "SELECT firstName, lastName, selectedOption, submittedAt FROM registrations ORDER BY id DESC",
-        (err, rows) => {
-          if (err) {
-            reject(err);
-            return;
-          }
-          resolve(rows);
-        }
-      );
-    });
+    const result = await pool.query(
+      "SELECT firstName, lastName, selectedOption, submittedAt FROM registrations ORDER BY id DESC"
+    );
 
-    res.json({ registrations });
+    res.json({ registrations: result.rows });
   } catch (error) {
     console.error('❌ Error in /api/admin/export:', error);
     res.status(500).json({ error: 'خطای سرور: ' + error.message });
   }
 });
 
-// ==================== تست API (برای دیباگ) ====================
+// ==================== تست API ====================
 app.get('/api/test', (req, res) => {
   res.json({ status: 'API is working!', time: new Date().toISOString() });
 });
