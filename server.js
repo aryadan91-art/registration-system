@@ -38,50 +38,63 @@ function normalizeText(text) {
     .replace(/ة/g, 'ه');
 }
 
+// ==================== کش کردن تنظیمات (برای سرعت) ====================
+let settingsCache = null;
+let settingsCacheTime = 0;
+const CACHE_TTL = 5000; // 5 ثانیه
+
 async function getSettings() {
-  const result = await pool.query("SELECT key, value FROM settings");
-  const settings = {};
-  result.rows.forEach(row => {
-    settings[row.key] = row.value;
-  });
-  return settings;
-}
-
-async function isRegistrationOpen() {
-  const settings = await getSettings();
-  const maxCapacity = parseInt(settings.maxcapacity) || 100;
+  const now = Date.now();
+  if (settingsCache && (now - settingsCacheTime) < CACHE_TTL) {
+    return settingsCache;
+  }
   
-  const countResult = await pool.query("SELECT COUNT(*) as count FROM registrations");
-  const count = parseInt(countResult.rows[0].count);
-
-  if (count >= maxCapacity) {
-    return { open: false, reason: 'ظرفیت ثبت‌نام تکمیل شده است.' };
+  try {
+    const result = await pool.query("SELECT key, value FROM settings");
+    const settings = {};
+    result.rows.forEach(row => {
+      settings[row.key] = row.value;
+    });
+    settingsCache = settings;
+    settingsCacheTime = now;
+    return settings;
+  } catch (error) {
+    console.error('❌ خطا در دریافت تنظیمات:', error);
+    return { maxCapacity: '100', deadline: '' };
   }
-
-  if (settings.deadline && settings.deadline !== '') {
-    const now = new Date();
-    const deadline = new Date(settings.deadline);
-    if (now > deadline) {
-      return { open: false, reason: 'زمان ثبت‌نام به پایان رسیده است.' };
-    }
-  }
-
-  return { open: true };
 }
 
 // ==================== API Routes ====================
 
 app.get('/api/status', async (req, res) => {
   try {
-    const status = await isRegistrationOpen();
-    const settings = await getSettings();
-    const countResult = await pool.query("SELECT COUNT(*) as count FROM registrations");
+    const [settings, countResult] = await Promise.all([
+      getSettings(),
+      pool.query("SELECT COUNT(*) as count FROM registrations")
+    ]);
+    
     const count = parseInt(countResult.rows[0].count);
+    const maxCapacity = parseInt(settings.maxcapacity) || 100;
+    
+    let open = true;
+    let reason = '';
+    if (count >= maxCapacity) {
+      open = false;
+      reason = 'ظرفیت ثبت‌نام تکمیل شده است.';
+    } else if (settings.deadline && settings.deadline !== '') {
+      const now = new Date();
+      const deadline = new Date(settings.deadline);
+      if (now > deadline) {
+        open = false;
+        reason = 'زمان ثبت‌نام به پایان رسیده است.';
+      }
+    }
 
     res.json({
-      ...status,
+      open,
+      reason,
       currentCount: count,
-      maxCapacity: parseInt(settings.maxcapacity) || 100,
+      maxCapacity: maxCapacity,
       deadline: settings.deadline || null
     });
   } catch (error) {
@@ -92,8 +105,6 @@ app.get('/api/status', async (req, res) => {
 
 app.post('/api/register', async (req, res) => {
   try {
-    console.log('📥 درخواست ثبت‌نام جدید:', req.body);
-    
     const { firstName, lastName, selectedOption, deviceId } = req.body;
     const ipAddress = req.ip || req.connection.remoteAddress || 'unknown';
 
@@ -101,29 +112,24 @@ app.post('/api/register', async (req, res) => {
       return res.status(400).json({ error: 'همه فیلدها الزامی هستند.' });
     }
 
-    const status = await isRegistrationOpen();
-    if (!status.open) {
-      return res.status(400).json({ error: status.reason });
-    }
-
     const normalizedFirst = normalizeText(firstName);
     const normalizedLast = normalizeText(lastName);
 
-    // بررسی تکراری
-    const duplicateCheck = await pool.query(
-      "SELECT * FROM registrations WHERE normalizedFirst = $1 AND normalizedLast = $2",
-      [normalizedFirst, normalizedLast]
-    );
+    // اجرای همزمان دو کوئری بررسی
+    const [duplicateCheck, deviceCheck] = await Promise.all([
+      pool.query(
+        "SELECT id FROM registrations WHERE normalizedFirst = $1 AND normalizedLast = $2 LIMIT 1",
+        [normalizedFirst, normalizedLast]
+      ),
+      pool.query(
+        "SELECT id FROM registrations WHERE deviceId = $1 LIMIT 1",
+        [deviceId]
+      )
+    ]);
 
     if (duplicateCheck.rows.length > 0) {
       return res.status(400).json({ error: 'این نام قبلاً ثبت شده است!' });
     }
-
-    // بررسی دستگاه
-    const deviceCheck = await pool.query(
-      "SELECT * FROM registrations WHERE deviceId = $1",
-      [deviceId]
-    );
 
     if (deviceCheck.rows.length > 0) {
       return res.status(400).json({ error: 'این دستگاه قبلاً ثبت‌نام کرده است!' });
@@ -137,7 +143,10 @@ app.post('/api/register', async (req, res) => {
       [firstName.trim(), lastName.trim(), normalizedFirst, normalizedLast, selectedOption, deviceId, ipAddress]
     );
 
-    console.log('✅ ثبت‌نام جدید ذخیره شد');
+    // پاک کردن کش بعد از ثبت‌نام جدید
+    settingsCache = null;
+    settingsCacheTime = 0;
+
     res.json({ success: true, message: '✅ ثبت‌نام با موفقیت انجام شد!' });
 
   } catch (error) {
@@ -154,7 +163,7 @@ app.post('/api/admin/registrations', async (req, res) => {
     }
 
     const result = await pool.query(
-      "SELECT id, firstName, lastName, selectedOption, submittedAt FROM registrations ORDER BY id DESC"
+      "SELECT id, firstName, lastName, selectedOption, submittedAt FROM registrations ORDER BY id DESC LIMIT 1000"
     );
 
     res.json({ registrations: result.rows });
@@ -166,8 +175,6 @@ app.post('/api/admin/registrations', async (req, res) => {
 
 app.post('/api/admin/settings', async (req, res) => {
   try {
-    console.log('📥 درخواست ذخیره تنظیمات:', req.body);
-    
     const { password, maxCapacity, deadline } = req.body;
     if (password !== '1234') {
       return res.status(401).json({ error: 'رمز عبور اشتباه است!' });
@@ -178,7 +185,6 @@ app.post('/api/admin/settings', async (req, res) => {
         "UPDATE settings SET value = $1 WHERE key = 'maxCapacity'",
         [maxCapacity.toString()]
       );
-      console.log('✅ ظرفیت بروزرسانی شد:', maxCapacity);
     }
 
     if (deadline !== undefined) {
@@ -186,8 +192,11 @@ app.post('/api/admin/settings', async (req, res) => {
         "UPDATE settings SET value = $1 WHERE key = 'deadline'",
         [deadline || '']
       );
-      console.log('✅ تاریخ بروزرسانی شد:', deadline);
     }
+
+    // پاک کردن کش بعد از بروزرسانی
+    settingsCache = null;
+    settingsCacheTime = 0;
 
     res.json({ success: true, message: '✅ تنظیمات ذخیره شد!' });
   } catch (error) {
@@ -204,7 +213,7 @@ app.post('/api/admin/export', async (req, res) => {
     }
 
     const result = await pool.query(
-      "SELECT firstName, lastName, selectedOption, submittedAt FROM registrations ORDER BY id DESC"
+      "SELECT firstName, lastName, selectedOption, submittedAt FROM registrations ORDER BY id DESC LIMIT 10000"
     );
 
     res.json({ registrations: result.rows });
