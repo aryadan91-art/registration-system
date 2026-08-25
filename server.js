@@ -8,12 +8,20 @@ const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 10000;
 
-// ==================== Middleware (بهینه شده) ====================
+// ==================== Middleware (اصلاح شده) ====================
 app.use(helmet({
-  crossOriginResourcePolicy: { policy: "cross-origin" }
+  crossOriginResourcePolicy: { policy: "cross-origin" },
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", "data:", "https:"],
+    }
+  }
 }));
 
-// تنظیمات CORS برای پذیرش درخواست از همه جا (حل مشکل اندروید)
+// تنظیمات CORS
 app.use(cors({
   origin: '*',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
@@ -26,14 +34,13 @@ app.use(express.static('public'));
 
 // محدودیت درخواست
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 دقیقه
-  max: 200 // حداکثر 200 درخواست
+  windowMs: 15 * 60 * 1000,
+  max: 200
 });
 app.use('/api/', limiter);
 
 // ==================== توابع کمکی ====================
 
-// نرمال‌سازی متن (ضدتقلب)
 function normalizeText(text) {
   if (!text) return '';
   return text
@@ -45,7 +52,6 @@ function normalizeText(text) {
     .replace(/ة/g, 'ه');
 }
 
-// دریافت تنظیمات
 function getSettings() {
   return new Promise((resolve, reject) => {
     db.all("SELECT key, value FROM settings", (err, rows) => {
@@ -62,12 +68,10 @@ function getSettings() {
   });
 }
 
-// بررسی باز بودن ثبت‌نام
 async function isRegistrationOpen() {
   const settings = await getSettings();
   const maxCapacity = parseInt(settings.maxCapacity) || 100;
   
-  // بررسی ظرفیت
   const count = await new Promise((resolve, reject) => {
     db.get("SELECT COUNT(*) as count FROM registrations", (err, row) => {
       if (err) {
@@ -82,7 +86,6 @@ async function isRegistrationOpen() {
     return { open: false, reason: 'ظرفیت ثبت‌نام تکمیل شده است.' };
   }
 
-  // بررسی تاریخ انقضا
   if (settings.deadline && settings.deadline !== '') {
     const now = new Date();
     const deadline = new Date(settings.deadline);
@@ -96,7 +99,6 @@ async function isRegistrationOpen() {
 
 // ==================== API Routes ====================
 
-// 1. وضعیت سیستم
 app.get('/api/status', async (req, res) => {
   try {
     const status = await isRegistrationOpen();
@@ -123,18 +125,15 @@ app.get('/api/status', async (req, res) => {
   }
 });
 
-// 2. ثبت‌نام جدید
 app.post('/api/register', async (req, res) => {
   try {
     const { firstName, lastName, selectedOption, deviceId } = req.body;
     const ipAddress = req.ip || req.connection.remoteAddress || 'unknown';
 
-    // اعتبارسنجی
     if (!firstName || !lastName || !selectedOption || !deviceId) {
       return res.status(400).json({ error: 'همه فیلدها الزامی هستند.' });
     }
 
-    // بررسی باز بودن ثبت‌نام
     const status = await isRegistrationOpen();
     if (!status.open) {
       return res.status(400).json({ error: status.reason });
@@ -143,7 +142,6 @@ app.post('/api/register', async (req, res) => {
     const normalizedFirst = normalizeText(firstName);
     const normalizedLast = normalizeText(lastName);
 
-    // بررسی تکراری بودن (با نرمال‌سازی)
     const duplicate = await new Promise((resolve, reject) => {
       db.get(
         "SELECT * FROM registrations WHERE normalizedFirst = ? AND normalizedLast = ?",
@@ -162,7 +160,6 @@ app.post('/api/register', async (req, res) => {
       return res.status(400).json({ error: 'این نام قبلاً ثبت شده است!' });
     }
 
-    // بررسی دستگاه
     const deviceUsed = await new Promise((resolve, reject) => {
       db.get(
         "SELECT * FROM registrations WHERE deviceId = ?",
@@ -181,7 +178,6 @@ app.post('/api/register', async (req, res) => {
       return res.status(400).json({ error: 'این دستگاه قبلاً ثبت‌نام کرده است!' });
     }
 
-    // ذخیره در دیتابیس
     await new Promise((resolve, reject) => {
       db.run(
         `INSERT INTO registrations 
@@ -206,7 +202,6 @@ app.post('/api/register', async (req, res) => {
   }
 });
 
-// 3. دریافت لیست ثبت‌نام‌ها (فقط با رمز 1234)
 app.post('/api/admin/registrations', async (req, res) => {
   try {
     const { password } = req.body;
@@ -234,7 +229,6 @@ app.post('/api/admin/registrations', async (req, res) => {
   }
 });
 
-// 4. به‌روزرسانی تنظیمات (فقط با رمز 1234)
 app.post('/api/admin/settings', async (req, res) => {
   try {
     const { password, maxCapacity, deadline } = req.body;
@@ -281,7 +275,6 @@ app.post('/api/admin/settings', async (req, res) => {
   }
 });
 
-// 5. خروجی CSV (فقط با رمز 1234)
 app.post('/api/admin/export', async (req, res) => {
   try {
     const { password } = req.body;
@@ -309,7 +302,7 @@ app.post('/api/admin/export', async (req, res) => {
   }
 });
 
-// 6. مسیر پیش‌فرض برای رفع مشکل 404 در اندروید
+// مسیر پیش‌فرض برای رفع مشکل 404
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
@@ -320,7 +313,7 @@ app.listen(PORT, () => {
   console.log(`🌐 آدرس: http://localhost:${PORT}`);
 });
 
-// ==================== مدیریت خطاهای سرور ====================
+// مدیریت خطاهای سرور
 process.on('uncaughtException', (err) => {
   console.error('❌ خطای غیرمنتظره:', err);
 });
