@@ -8,7 +8,6 @@ const app = express();
 const PORT = process.env.PORT || 10000;
 
 // ==================== Middleware ====================
-// تنظیمات CORS
 app.use(cors({
   origin: '*',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
@@ -107,22 +106,26 @@ app.get('/api/status', async (req, res) => {
       deadline: settings.deadline || null
     });
   } catch (error) {
-    console.error('Error in /api/status:', error);
+    console.error('❌ Error in /api/status:', error);
     res.status(500).json({ error: 'خطای سرور: ' + error.message });
   }
 });
 
 app.post('/api/register', async (req, res) => {
   try {
+    console.log('📥 درخواست ثبت‌نام جدید:', req.body);
+    
     const { firstName, lastName, selectedOption, deviceId } = req.body;
     const ipAddress = req.ip || req.connection.remoteAddress || 'unknown';
 
     if (!firstName || !lastName || !selectedOption || !deviceId) {
+      console.log('❌ فیلدهای الزامی وجود ندارند');
       return res.status(400).json({ error: 'همه فیلدها الزامی هستند.' });
     }
 
     const status = await isRegistrationOpen();
     if (!status.open) {
+      console.log('❌ ثبت‌نام بسته است:', status.reason);
       return res.status(400).json({ error: status.reason });
     }
 
@@ -144,6 +147,7 @@ app.post('/api/register', async (req, res) => {
     });
 
     if (duplicate) {
+      console.log('❌ نام تکراری:', firstName, lastName);
       return res.status(400).json({ error: 'این نام قبلاً ثبت شده است!' });
     }
 
@@ -162,6 +166,7 @@ app.post('/api/register', async (req, res) => {
     });
 
     if (deviceUsed) {
+      console.log('❌ دستگاه تکراری:', deviceId);
       return res.status(400).json({ error: 'این دستگاه قبلاً ثبت‌نام کرده است!' });
     }
 
@@ -176,6 +181,7 @@ app.post('/api/register', async (req, res) => {
             reject(err);
             return;
           }
+          console.log('✅ ثبت‌نام جدید با ID:', this.lastID);
           resolve(this.lastID);
         }
       );
@@ -184,7 +190,7 @@ app.post('/api/register', async (req, res) => {
     res.json({ success: true, message: '✅ ثبت‌نام با موفقیت انجام شد!' });
 
   } catch (error) {
-    console.error('Error in /api/register:', error);
+    console.error('❌ Error in /api/register:', error);
     res.status(500).json({ error: 'خطای سرور: ' + error.message });
   }
 });
@@ -211,15 +217,18 @@ app.post('/api/admin/registrations', async (req, res) => {
 
     res.json({ registrations });
   } catch (error) {
-    console.error('Error in /api/admin/registrations:', error);
+    console.error('❌ Error in /api/admin/registrations:', error);
     res.status(500).json({ error: 'خطای سرور: ' + error.message });
   }
 });
 
 app.post('/api/admin/settings', async (req, res) => {
   try {
+    console.log('📥 درخواست ذخیره تنظیمات:', req.body);
+    
     const { password, maxCapacity, deadline } = req.body;
     if (password !== '1234') {
+      console.log('❌ رمز عبور اشتباه');
       return res.status(401).json({ error: 'رمز عبور اشتباه است!' });
     }
 
@@ -230,9 +239,11 @@ app.post('/api/admin/settings', async (req, res) => {
           [maxCapacity.toString()],
           (err) => {
             if (err) {
+              console.error('❌ خطا در بروزرسانی ظرفیت:', err);
               reject(err);
               return;
             }
+            console.log('✅ ظرفیت بروزرسانی شد:', maxCapacity);
             resolve();
           }
         );
@@ -246,9 +257,11 @@ app.post('/api/admin/settings', async (req, res) => {
           [deadline || ''],
           (err) => {
             if (err) {
+              console.error('❌ خطا در بروزرسانی تاریخ:', err);
               reject(err);
               return;
             }
+            console.log('✅ تاریخ بروزرسانی شد:', deadline);
             resolve();
           }
         );
@@ -257,7 +270,7 @@ app.post('/api/admin/settings', async (req, res) => {
 
     res.json({ success: true, message: '✅ تنظیمات ذخیره شد!' });
   } catch (error) {
-    console.error('Error in /api/admin/settings:', error);
+    console.error('❌ خطای کلی در ذخیره تنظیمات:', error);
     res.status(500).json({ error: 'خطای سرور: ' + error.message });
   }
 });
@@ -284,12 +297,12 @@ app.post('/api/admin/export', async (req, res) => {
 
     res.json({ registrations });
   } catch (error) {
-    console.error('Error in /api/admin/export:', error);
+    console.error('❌ Error in /api/admin/export:', error);
     res.status(500).json({ error: 'خطای سرور: ' + error.message });
   }
 });
 
-// مسیر پیش‌فرض برای رفع مشکل 404
+// مسیر پیش‌فرض
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
@@ -300,7 +313,6 @@ app.listen(PORT, () => {
   console.log(`🌐 آدرس: http://localhost:${PORT}`);
 });
 
-// مدیریت خطاهای سرور
 process.on('uncaughtException', (err) => {
   console.error('❌ خطای غیرمنتظره:', err);
 });
