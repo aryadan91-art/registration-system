@@ -2,48 +2,356 @@
 <html lang="fa" dir="rtl">
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="theme-color" content="#667eea" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <title>سیستم ثبت‌نام آنلاین</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; display: flex; justify-content: center; align-items: center; padding: 20px; }
-        .container { background: white; border-radius: 20px; padding: 40px; max-width: 800px; width: 100%; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
-        h1 { text-align: center; color: #333; margin-bottom: 30px; font-size: 28px; }
-        .form-group { margin-bottom: 20px; }
-        label { display: block; font-weight: 600; margin-bottom: 5px; color: #555; }
-        input, select { width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 10px; font-size: 16px; transition: 0.3s; }
-        input:focus, select:focus { border-color: #667eea; outline: none; box-shadow: 0 0 0 3px rgba(102,126,234,0.1); }
-        .btn { width: 100%; padding: 14px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 10px; font-size: 18px; font-weight: 600; cursor: pointer; transition: 0.3s; }
-        .btn:hover { transform: translateY(-2px); box-shadow: 0 5px 20px rgba(102,126,234,0.4); }
-        .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
-        .message { margin-top: 20px; padding: 15px; border-radius: 10px; display: none; font-weight: 500; }
-        .message.success { display: block; background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
-        .message.error { display: block; background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
-        .message.warning { display: block; background: #fff3cd; color: #856404; border: 1px solid #ffeeba; }
-        .admin-link { text-align: center; margin-top: 20px; }
-        .admin-link a { color: #667eea; text-decoration: none; font-weight: 600; cursor: pointer; }
-        .admin-link a:hover { text-decoration: underline; }
-        .admin-panel { display: none; }
-        .admin-panel.active { display: block; }
-        .admin-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
-        .admin-header h2 { color: #333; }
-        .btn-small { padding: 8px 16px; background: #dc3545; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; }
-        .btn-small:hover { background: #c82333; }
-        .btn-small.green { background: #28a745; }
-        .btn-small.green:hover { background: #218838; }
-        .settings-box { background: #f8f9fa; padding: 20px; border-radius: 10px; margin-bottom: 20px; }
-        .settings-box .form-group { display: inline-block; width: 48%; margin-right: 2%; }
-        .settings-box .form-group:last-child { margin-right: 0; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 14px; }
-        th { background: #667eea; color: white; padding: 12px; text-align: right; }
-        td { padding: 10px 12px; border-bottom: 1px solid #ddd; }
-        tr:hover { background: #f5f5f5; }
-        .login-box { text-align: center; padding: 30px 0; }
-        .login-box input { max-width: 300px; margin: 10px auto; }
-        @media (max-width: 600px) { .settings-box .form-group { width: 100%; margin-right: 0; } .container { padding: 20px; } }
-        .badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
-        .badge-open { background: #d4edda; color: #155724; }
-        .badge-closed { background: #f8d7da; color: #721c24; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 16px;
+            margin: 0;
+            touch-action: manipulation;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 24px;
+            padding: 24px 20px;
+            max-width: 500px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            animation: fadeIn 0.5s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 24px;
+            font-size: 24px;
+            font-weight: 700;
+        }
+        
+        .form-group {
+            margin-bottom: 16px;
+        }
+        
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 6px;
+            color: #555;
+            font-size: 14px;
+        }
+        
+        input, select {
+            width: 100%;
+            padding: 14px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            font-size: 16px;
+            transition: all 0.3s;
+            background: #fafafa;
+            -webkit-appearance: none;
+            appearance: none;
+            touch-action: manipulation;
+        }
+        
+        input:focus, select:focus {
+            border-color: #667eea;
+            outline: none;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
+        }
+        
+        select {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23333' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: left 16px center;
+            padding-left: 40px;
+        }
+        
+        .btn {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .btn:active {
+            transform: scale(0.97);
+        }
+        
+        .btn:disabled {
+            opacity: 0.6;
+            transform: none;
+        }
+        
+        .btn.loading {
+            opacity: 0.7;
+            pointer-events: none;
+        }
+        
+        .btn.loading::after {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+        
+        @keyframes spin {
+            to { transform: translateY(-50%) rotate(360deg); }
+        }
+        
+        .message {
+            margin-top: 16px;
+            padding: 14px;
+            border-radius: 12px;
+            display: none;
+            font-weight: 500;
+            font-size: 14px;
+            text-align: center;
+        }
+        
+        .message.success {
+            display: block;
+            background: #e8f5e9;
+            color: #2e7d32;
+            border: 1px solid #a5d6a7;
+        }
+        
+        .message.error {
+            display: block;
+            background: #ffebee;
+            color: #c62828;
+            border: 1px solid #ef9a9a;
+        }
+        
+        .message.warning {
+            display: block;
+            background: #fff8e1;
+            color: #f57f17;
+            border: 1px solid #ffcc80;
+        }
+        
+        .admin-link {
+            text-align: center;
+            margin-top: 16px;
+        }
+        
+        .admin-link a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            touch-action: manipulation;
+        }
+        
+        .admin-link a:active {
+            opacity: 0.7;
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-top: 12px;
+        }
+        
+        .badge-open {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+        
+        .badge-closed {
+            background: #ffebee;
+            color: #c62828;
+        }
+        
+        /* Admin Panel Styles */
+        .admin-panel {
+            display: none;
+        }
+        
+        .admin-panel.active {
+            display: block;
+            animation: fadeIn 0.4s ease;
+        }
+        
+        .admin-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .admin-header h2 {
+            color: #333;
+            font-size: 20px;
+        }
+        
+        .btn-small {
+            padding: 10px 20px;
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            touch-action: manipulation;
+        }
+        
+        .btn-small:active {
+            transform: scale(0.95);
+        }
+        
+        .btn-small.green {
+            background: #28a745;
+        }
+        
+        .btn-small.green:active {
+            background: #1e7e34;
+        }
+        
+        .settings-box {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }
+        
+        .settings-box .form-group {
+            display: inline-block;
+            width: 48%;
+            margin-right: 2%;
+        }
+        
+        .settings-box .form-group:last-child {
+            margin-right: 0;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 16px;
+            font-size: 13px;
+        }
+        
+        th {
+            background: #667eea;
+            color: white;
+            padding: 10px 12px;
+            text-align: right;
+            font-weight: 600;
+        }
+        
+        td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        tr:active {
+            background: #f5f5f5;
+        }
+        
+        .login-box {
+            text-align: center;
+            padding: 30px 0;
+        }
+        
+        .login-box input {
+            max-width: 280px;
+            margin: 10px auto;
+        }
+        
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px 16px;
+            }
+            
+            h1 {
+                font-size: 20px;
+            }
+            
+            .settings-box .form-group {
+                width: 100%;
+                margin-right: 0;
+            }
+            
+            input, select, .btn {
+                font-size: 16px;
+                padding: 14px;
+            }
+            
+            .btn {
+                font-size: 17px;
+                padding: 15px;
+            }
+            
+            table {
+                font-size: 12px;
+            }
+            
+            th, td {
+                padding: 8px 10px;
+            }
+        }
+        
+        @media (max-width: 400px) {
+            .container {
+                padding: 16px 12px;
+            }
+            
+            h1 {
+                font-size: 18px;
+            }
+            
+            input, select {
+                padding: 12px 14px;
+                font-size: 15px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -57,14 +365,13 @@
         
         <div class="form-group">
             <label>نام</label>
-            <input type="text" id="firstName" placeholder="مثال: آریا" />
+            <input type="text" id="firstName" placeholder="مثال: آریا" inputmode="text" />
         </div>
         <div class="form-group">
             <label>نام خانوادگی</label>
-            <input type="text" id="lastName" placeholder="مثال: دانشمندی" />
+            <input type="text" id="lastName" placeholder="مثال: دانشمندی" inputmode="text" />
         </div>
         
-        <!-- سوال جدید: روز شرکت در عصر بازی -->
         <div class="form-group">
             <label>چه روزی در عصر بازی شرکت می‌کنی؟</label>
             <select id="selectedOption">
@@ -79,7 +386,7 @@
             <a onclick="showAdminLogin()">🔐 ورود به پنل مدیریت</a>
         </div>
         
-        <div style="text-align:center;margin-top:15px;font-size:14px;color:#888;">
+        <div style="text-align:center;font-size:13px;color:#888;margin-top:12px;">
             <span id="statusBadge"></span>
         </div>
     </div>
@@ -92,30 +399,30 @@
         </div>
 
         <div id="adminLogin" class="login-box">
-            <h3>ورود به پنل مدیریت</h3>
-            <input type="password" id="adminPassword" placeholder="رمز عبور را وارد کنید" />
+            <h3 style="margin-bottom:16px;">ورود به پنل مدیریت</h3>
+            <input type="password" id="adminPassword" placeholder="رمز عبور را وارد کنید" inputmode="text" />
             <button class="btn" style="max-width:200px;margin:10px auto;" onclick="checkAdminLogin()">ورود</button>
         </div>
 
         <div id="adminDashboard" style="display:none;">
             <div class="settings-box">
-                <h3>⚙️ تنظیمات سیستم</h3>
+                <h3 style="margin-bottom:12px;">⚙️ تنظیمات سیستم</h3>
                 <div class="form-group">
                     <label>ظرفیت ثبت‌نام</label>
-                    <input type="number" id="maxCapacity" min="1" />
+                    <input type="number" id="maxCapacity" min="1" inputmode="numeric" />
                 </div>
                 <div class="form-group">
                     <label>تاریخ انقضا</label>
                     <input type="datetime-local" id="deadline" />
                 </div>
-                <button class="btn" style="margin-top:10px;" onclick="saveSettings()">ذخیره تنظیمات</button>
+                <button class="btn" style="margin-top:10px;padding:12px;font-size:16px;" onclick="saveSettings()">ذخیره تنظیمات</button>
             </div>
 
-            <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
-                <h3>📊 لیست ثبت‌نام‌کنندگان (<span id="countDisplay">0</span> نفر)</h3>
+            <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin:16px 0;">
+                <h3 style="font-size:16px;">📊 لیست ثبت‌نام‌کنندگان (<span id="countDisplay">0</span> نفر)</h3>
                 <button class="btn-small green" onclick="exportExcel()">📥 خروجی Excel</button>
             </div>
-            <div style="overflow-x:auto;">
+            <div style="overflow-x:auto;border-radius:12px;border:1px solid #e0e0e0;">
                 <table>
                     <thead>
                         <tr>
@@ -127,7 +434,7 @@
                         </tr>
                     </thead>
                     <tbody id="registrationsTable">
-                        <tr><td colspan="5" style="text-align:center;">در حال بارگذاری...</td></tr>
+                        <tr><td colspan="5" style="text-align:center;padding:20px;">در حال بارگذاری...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -136,8 +443,14 @@
 </div>
 
 <script>
+    // ============================================
+    // API BASE URL
+    // ============================================
     const API_BASE = window.location.origin + '/api';
 
+    // ============================================
+    // DEVICE FINGERPRINT
+    // ============================================
     function getDeviceId() {
         let deviceId = localStorage.getItem('deviceId');
         if (!deviceId) {
@@ -147,18 +460,25 @@
         return deviceId;
     }
 
+    // ============================================
+    // CHECK STATUS
+    // ============================================
     async function checkStatus() {
         try {
             const response = await fetch(API_BASE + '/status');
             const data = await response.json();
             
             const badge = document.getElementById('statusBadge');
+            const submitBtn = document.getElementById('submitBtn');
+            
             if (data.open) {
                 badge.innerHTML = `<span class="badge badge-open">✅ ثبت‌نام باز است (${data.currentCount}/${data.maxCapacity})</span>`;
-                document.getElementById('submitBtn').disabled = false;
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'ثبت‌نام';
             } else {
                 badge.innerHTML = `<span class="badge badge-closed">⛔ ${data.reason}</span>`;
-                document.getElementById('submitBtn').disabled = true;
+                submitBtn.disabled = true;
+                submitBtn.textContent = '⛔ ثبت‌نام بسته است';
                 showMessage('⛔ ' + data.reason, 'warning');
             }
         } catch (error) {
@@ -167,6 +487,9 @@
         }
     }
 
+    // ============================================
+    // SUBMIT REGISTRATION
+    // ============================================
     async function submitRegistration() {
         const firstName = document.getElementById('firstName').value;
         const lastName = document.getElementById('lastName').value;
@@ -183,6 +506,7 @@
 
         const submitBtn = document.getElementById('submitBtn');
         submitBtn.disabled = true;
+        submitBtn.classList.add('loading');
         submitBtn.textContent = 'در حال ثبت...';
 
         try {
@@ -203,14 +527,16 @@
                 showMessage('✅ ثبت‌نام شما با موفقیت انجام شد!', 'success');
                 document.getElementById('firstName').value = '';
                 document.getElementById('lastName').value = '';
-                checkStatus();
+                await checkStatus();
             } else {
                 showMessage('❌ ' + data.error, 'error');
             }
         } catch (error) {
+            console.error('Submit error:', error);
             showMessage('❌ خطا در ارتباط با سرور!', 'error');
         } finally {
             submitBtn.disabled = false;
+            submitBtn.classList.remove('loading');
             submitBtn.textContent = 'ثبت‌نام';
         }
     }
@@ -220,14 +546,20 @@
         messageEl.textContent = text;
         messageEl.className = 'message ' + type;
         messageEl.style.display = 'block';
-        setTimeout(() => { messageEl.style.display = 'none'; }, 6000);
+        setTimeout(() => {
+            messageEl.style.display = 'none';
+        }, 6000);
     }
 
+    // ============================================
+    // ADMIN PANEL
+    // ============================================
     function showAdminLogin() {
         document.getElementById('registrationForm').style.display = 'none';
         document.getElementById('adminPanel').classList.add('active');
         document.getElementById('adminLogin').style.display = 'block';
         document.getElementById('adminDashboard').style.display = 'none';
+        document.getElementById('adminPassword').value = '';
     }
 
     async function checkAdminLogin() {
@@ -255,21 +587,26 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ password: '1234' })
             });
+            
+            if (!regResponse.ok) {
+                throw new Error('خطا در دریافت اطلاعات');
+            }
+            
             const regData = await regResponse.json();
 
             const tbody = document.getElementById('registrationsTable');
             document.getElementById('countDisplay').textContent = regData.registrations.length;
 
             if (regData.registrations.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">هیچ ثبت‌نامی وجود ندارد</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:20px;">هیچ ثبت‌نامی وجود ندارد</td></tr>';
             } else {
                 tbody.innerHTML = regData.registrations.map((reg, index) => `
                     <tr>
                         <td>${index + 1}</td>
-                        <td>${reg.firstName}</td>
-                        <td>${reg.lastName}</td>
-                        <td>${reg.selectedOption}</td>
-                        <td>${new Date(reg.submittedAt).toLocaleString('fa-IR')}</td>
+                        <td>${reg.firstName || ''}</td>
+                        <td>${reg.lastName || ''}</td>
+                        <td>${reg.selectedOption || ''}</td>
+                        <td>${reg.submittedAt ? new Date(reg.submittedAt).toLocaleString('fa-IR') : ''}</td>
                     </tr>
                 `).join('');
             }
@@ -282,6 +619,7 @@
             }
 
         } catch (error) {
+            console.error('Load admin data error:', error);
             alert('❌ خطا در بارگذاری اطلاعات: ' + error.message);
         }
     }
@@ -309,7 +647,7 @@
 
             if (response.ok) {
                 alert('✅ تنظیمات با موفقیت ذخیره شد!');
-                checkStatus();
+                await checkStatus();
             } else {
                 alert('❌ ' + data.error);
             }
@@ -339,21 +677,26 @@
 
             let csv = 'ردیف,نام,نام خانوادگی,روز شرکت,زمان ثبت\n';
             data.registrations.forEach((reg, index) => {
-                const date = new Date(reg.submittedAt).toLocaleString('fa-IR');
-                csv += `${index+1},${reg.firstName},${reg.lastName},${reg.selectedOption},${date}\n`;
+                const date = reg.submittedAt ? new Date(reg.submittedAt).toLocaleString('fa-IR') : '';
+                csv += `${index+1},${reg.firstName || ''},${reg.lastName || ''},${reg.selectedOption || ''},${date}\n`;
             });
 
             const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement('a');
             link.href = URL.createObjectURL(blob);
             link.download = `registrations_${new Date().toISOString().slice(0,10)}.csv`;
+            document.body.appendChild(link);
             link.click();
+            document.body.removeChild(link);
 
         } catch (error) {
             alert('❌ خطا در خروجی: ' + error.message);
         }
     }
 
+    // ============================================
+    // KEYBOARD SHORTCUT
+    // ============================================
     document.addEventListener('keydown', function(e) {
         if (e.ctrlKey && e.shiftKey && (e.key === 'A' || e.key === 'a')) {
             e.preventDefault();
@@ -361,9 +704,17 @@
         }
     });
 
-    checkStatus();
-    console.log('🔐 سیستم ثبت‌نام آنلاین (نسخه سروری) بارگذاری شد.');
-</script>
+    // ============================================
+    // TOUCH OPTIMIZATION
+    // ============================================
+    document.addEventListener('touchstart', function() {}, { passive: true });
 
+    // ============================================
+    // INIT
+    // ============================================
+    checkStatus();
+    console.log('🔐 سیستم ثبت‌نام آنلاین بارگذاری شد.');
+    console.log('📋 برای ورود به پنل مدیریت از Ctrl+Shift+A استفاده کنید.');
+</script>
 </body>
 </html>
