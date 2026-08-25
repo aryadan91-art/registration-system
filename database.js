@@ -41,9 +41,9 @@ async function initDB() {
       await pool.query("INSERT INTO settings (key, value) VALUES ('deadline', '')");
     }
     
-    console.log('✅ Supabase متصل شد!');
+    console.log('✅ اتصال به Supabase با موفقیت برقرار شد!');
   } catch (error) {
-    console.error('❌ خطا در اتصال:', error.message);
+    console.error('❌ خطا در اتصال به Supabase:', error.message);
   }
 }
 
