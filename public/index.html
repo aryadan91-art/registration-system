@@ -757,3 +757,72 @@
 
     // ============================================
     // اتصال همه دکمه‌ها بعد از بارگذاری کامل صفحه
+    // ============================================
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('✅ صفحه بارگذاری شد، اتصال دکمه‌ها...');
+        
+        // دکمه ثبت‌نام
+        const submitBtn = document.getElementById('submitBtn');
+        if (submitBtn) {
+            submitBtn.addEventListener('click', submitRegistration);
+            console.log('✅ دکمه ثبت‌نام متصل شد');
+        }
+
+        // لینک ورود به پنل مدیریت
+        const adminLink = document.getElementById('adminLoginLink');
+        if (adminLink) {
+            adminLink.addEventListener('click', showAdminLogin);
+            console.log('✅ لینک ورود به پنل متصل شد');
+        }
+
+        // دکمه ورود به پنل مدیریت
+        const adminLoginBtn = document.getElementById('adminLoginBtn');
+        if (adminLoginBtn) {
+            adminLoginBtn.addEventListener('click', checkAdminLogin);
+            console.log('✅ دکمه ورود به پنل متصل شد');
+        }
+
+        // دکمه خروج از پنل
+        const logoutBtn = document.getElementById('logoutBtn');
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', logoutAdmin);
+            console.log('✅ دکمه خروج متصل شد');
+        }
+
+        // دکمه ذخیره تنظیمات
+        const saveSettingsBtn = document.getElementById('saveSettingsBtn');
+        if (saveSettingsBtn) {
+            saveSettingsBtn.addEventListener('click', saveSettings);
+            console.log('✅ دکمه ذخیره تنظیمات متصل شد');
+        }
+
+        // دکمه خروجی Excel
+        const exportBtn = document.getElementById('exportBtn');
+        if (exportBtn) {
+            exportBtn.addEventListener('click', exportExcel);
+            console.log('✅ دکمه خروجی Excel متصل شد');
+        }
+
+        // تست API و بارگذاری اولیه
+        testAPI().then(() => {
+            checkStatus();
+        });
+    });
+
+    // ============================================
+    // KEYBOARD SHORTCUT
+    // ============================================
+    document.addEventListener('keydown', function(e) {
+        if (e.ctrlKey && e.shiftKey && (e.key === 'A' || e.key === 'a')) {
+            e.preventDefault();
+            showAdminLogin();
+        }
+    });
+
+    console.log('🔐 سیستم ثبت‌نام آنلاین بارگذاری شد.');
+    console.log('📋 برای ورود به پنل مدیریت از Ctrl+Shift+A استفاده کنید.');
+    console.log('🌐 API Base:', API_BASE);
+</script>
+
+</body>
+</html>
