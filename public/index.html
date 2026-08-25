@@ -204,7 +204,6 @@
             color: #c62828;
         }
         
-        /* Admin Panel Styles */
         .admin-panel {
             display: none;
         }
@@ -289,10 +288,6 @@
             border-bottom: 1px solid #e0e0e0;
         }
         
-        tr:active {
-            background: #f5f5f5;
-        }
-        
         .login-box {
             text-align: center;
             padding: 30px 0;
@@ -307,30 +302,24 @@
             .container {
                 padding: 20px 16px;
             }
-            
             h1 {
                 font-size: 20px;
             }
-            
             .settings-box .form-group {
                 width: 100%;
                 margin-right: 0;
             }
-            
             input, select, .btn {
                 font-size: 16px;
                 padding: 14px;
             }
-            
             .btn {
                 font-size: 17px;
                 padding: 15px;
             }
-            
             table {
                 font-size: 12px;
             }
-            
             th, td {
                 padding: 8px 10px;
             }
@@ -340,11 +329,9 @@
             .container {
                 padding: 16px 12px;
             }
-            
             h1 {
                 font-size: 18px;
             }
-            
             input, select {
                 padding: 12px 14px;
                 font-size: 15px;
@@ -353,14 +340,10 @@
     </style>
 </head>
 <body>
-
 <div class="container" id="app">
-    <!-- Registration Form -->
     <div id="registrationForm">
         <h1>📋 فرم ثبت‌نام</h1>
-        
         <div id="statusMessage" class="message"></div>
-        
         <div class="form-group">
             <label>نام</label>
             <input type="text" id="firstName" placeholder="مثال: آریا" inputmode="text" />
@@ -369,7 +352,6 @@
             <label>نام خانوادگی</label>
             <input type="text" id="lastName" placeholder="مثال: دانشمندی" inputmode="text" />
         </div>
-        
         <div class="form-group">
             <label>چه روزی در عصر بازی شرکت می‌کنی؟</label>
             <select id="selectedOption">
@@ -377,31 +359,25 @@
                 <option value="سه‌شنبه">سه‌شنبه</option>
             </select>
         </div>
-        
         <button class="btn" id="submitBtn">ثبت‌نام</button>
-        
         <div class="admin-link">
             <a id="adminLoginLink">🔐 ورود به پنل مدیریت</a>
         </div>
-        
         <div style="text-align:center;font-size:13px;color:#888;margin-top:12px;">
             <span id="statusBadge"></span>
         </div>
     </div>
 
-    <!-- Admin Panel -->
     <div id="adminPanel" class="admin-panel">
         <div class="admin-header">
             <h2>👑 پنل مدیریت</h2>
             <button class="btn-small" id="logoutBtn">خروج</button>
         </div>
-
         <div id="adminLogin" class="login-box">
             <h3 style="margin-bottom:16px;">ورود به پنل مدیریت</h3>
             <input type="password" id="adminPassword" placeholder="رمز عبور را وارد کنید" inputmode="text" />
             <button class="btn" id="adminLoginBtn" style="max-width:200px;margin:10px auto;">ورود</button>
         </div>
-
         <div id="adminDashboard" style="display:none;">
             <div class="settings-box">
                 <h3 style="margin-bottom:12px;">⚙️ تنظیمات سیستم</h3>
@@ -415,40 +391,22 @@
                 </div>
                 <button class="btn" id="saveSettingsBtn" style="margin-top:10px;padding:12px;font-size:16px;">ذخیره تنظیمات</button>
             </div>
-
             <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin:16px 0;">
                 <h3 style="font-size:16px;">📊 لیست ثبت‌نام‌کنندگان (<span id="countDisplay">0</span> نفر)</h3>
                 <button class="btn-small green" id="exportBtn">📥 خروجی Excel</button>
             </div>
             <div style="overflow-x:auto;border-radius:12px;border:1px solid #e0e0e0;">
                 <table>
-                    <thead>
-                        <tr>
-                            <th>#</th>
-                            <th>نام</th>
-                            <th>نام خانوادگی</th>
-                            <th>روز شرکت</th>
-                            <th>زمان ثبت</th>
-                        </tr>
-                    </thead>
-                    <tbody id="registrationsTable">
-                        <tr><td colspan="5" style="text-align:center;padding:20px;">در حال بارگذاری...</td></tr>
-                    </tbody>
+                    <thead><tr><th>#</th><th>نام</th><th>نام خانوادگی</th><th>روز شرکت</th><th>زمان ثبت</th></tr></thead>
+                    <tbody id="registrationsTable"><tr><td colspan="5" style="text-align:center;padding:20px;">در حال بارگذاری...</td></tr></tbody>
                 </table>
             </div>
         </div>
     </div>
 </div>
-
 <script>
-    // ============================================
-    // API BASE URL
-    // ============================================
     const API_BASE = window.location.origin + '/api';
 
-    // ============================================
-    // DEVICE FINGERPRINT
-    // ============================================
     function getDeviceId() {
         let deviceId = localStorage.getItem('deviceId');
         if (!deviceId) {
@@ -458,18 +416,11 @@
         return deviceId;
     }
 
-    // ============================================
-    // تابع کمکی برای fetch با timeout 10 ثانیه
-    // ============================================
-    async function fetchWithTimeout(url, options = {}, timeout = 10000) {
+    async function fetchWithTimeout(url, options = {}, timeout = 8000) {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), timeout);
-        
         try {
-            const response = await fetch(url, {
-                ...options,
-                signal: controller.signal
-            });
+            const response = await fetch(url, { ...options, signal: controller.signal });
             clearTimeout(timeoutId);
             return response;
         } catch (error) {
@@ -478,61 +429,33 @@
         }
     }
 
-    // ============================================
-    // تست اتصال به API
-    // ============================================
-    async function testAPI() {
-        try {
-            const response = await fetchWithTimeout(API_BASE + '/test');
-            if (response.ok) {
-                const data = await response.json();
-                console.log('✅ API متصل است:', data);
-                return true;
-            }
-        } catch (error) {
-            console.error('❌ API در دسترس نیست:', error);
-            showMessage('❌ سرور در دسترس نیست! لطفاً صفحه را رفرش کنید.', 'error');
-            return false;
-        }
-    }
-
-    // ============================================
-    // CHECK STATUS
-    // ============================================
     async function checkStatus() {
         try {
             const response = await fetchWithTimeout(API_BASE + '/status');
             const data = await response.json();
-            
             const badge = document.getElementById('statusBadge');
             const submitBtn = document.getElementById('submitBtn');
-            
             if (data.open) {
-                badge.innerHTML = `<span class="badge badge-open">✅ ثبت‌نام باز است (${data.currentCount}/${data.maxCapacity})</span>`;
+                badge.innerHTML = '<span class="badge badge-open">✅ ثبت‌نام باز است (' + data.currentCount + '/' + data.maxCapacity + ')</span>';
                 submitBtn.disabled = false;
                 submitBtn.textContent = 'ثبت‌نام';
             } else {
-                badge.innerHTML = `<span class="badge badge-closed">⛔ ${data.reason}</span>`;
+                badge.innerHTML = '<span class="badge badge-closed">⛔ ' + data.reason + '</span>';
                 submitBtn.disabled = true;
                 submitBtn.textContent = '⛔ ثبت‌نام بسته است';
                 showMessage('⛔ ' + data.reason, 'warning');
             }
         } catch (error) {
-            console.error('Error checking status:', error);
+            console.error('Error:', error);
             showMessage('❌ خطا در ارتباط با سرور!', 'error');
         }
     }
 
-    // ============================================
-    // SUBMIT REGISTRATION
-    // ============================================
     async function submitRegistration() {
-        console.log('✅ ثبت‌نام شروع شد');
         const firstName = document.getElementById('firstName').value;
         const lastName = document.getElementById('lastName').value;
         const selectedOption = document.getElementById('selectedOption').value;
         const messageEl = document.getElementById('statusMessage');
-
         messageEl.className = 'message';
         messageEl.style.display = 'none';
 
@@ -545,43 +468,28 @@
         submitBtn.disabled = true;
         submitBtn.textContent = 'در حال ثبت...';
 
-        const deviceId = getDeviceId();
-        console.log('📱 DeviceID:', deviceId);
-
         try {
             const response = await fetchWithTimeout(API_BASE + '/register', {
                 method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json'
-                },
+                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
                 body: JSON.stringify({
                     firstName: firstName.trim(),
                     lastName: lastName.trim(),
                     selectedOption: selectedOption,
-                    deviceId: deviceId
+                    deviceId: getDeviceId()
                 })
             });
-
-            console.log('📡 وضعیت پاسخ:', response.status);
             const data = await response.json();
-            console.log('📦 داده پاسخ:', data);
-
             if (response.ok) {
                 showMessage('✅ ثبت‌نام شما با موفقیت انجام شد!', 'success');
                 document.getElementById('firstName').value = '';
                 document.getElementById('lastName').value = '';
-                await checkStatus();
+                checkStatus();
             } else {
                 showMessage('❌ ' + data.error, 'error');
             }
         } catch (error) {
-            if (error.name === 'AbortError') {
-                showMessage('❌ زمان درخواست به پایان رسید. دوباره تلاش کنید.', 'error');
-            } else {
-                console.error('❌ خطا در ثبت‌نام:', error);
-                showMessage('❌ خطا در ارتباط با سرور!', 'error');
-            }
+            showMessage('❌ خطا در ارتباط با سرور!', 'error');
         } finally {
             submitBtn.disabled = false;
             submitBtn.textContent = 'ثبت‌نام';
@@ -593,16 +501,10 @@
         messageEl.textContent = text;
         messageEl.className = 'message ' + type;
         messageEl.style.display = 'block';
-        setTimeout(() => {
-            messageEl.style.display = 'none';
-        }, 6000);
+        setTimeout(function() { messageEl.style.display = 'none'; }, 6000);
     }
 
-    // ============================================
-    // ADMIN PANEL
-    // ============================================
     function showAdminLogin() {
-        console.log('✅ ورود به پنل مدیریت');
         document.getElementById('registrationForm').style.display = 'none';
         document.getElementById('adminPanel').classList.add('active');
         document.getElementById('adminLogin').style.display = 'block';
@@ -611,114 +513,80 @@
     }
 
     async function checkAdminLogin() {
-        console.log('✅ بررسی رمز مدیریت');
         const password = document.getElementById('adminPassword').value;
         if (password !== '1234') {
             alert('رمز عبور اشتباه است!');
             return;
         }
-
         document.getElementById('adminLogin').style.display = 'none';
         document.getElementById('adminDashboard').style.display = 'block';
         await loadAdminData();
     }
 
     function logoutAdmin() {
-        console.log('✅ خروج از پنل مدیریت');
         document.getElementById('adminPanel').classList.remove('active');
         document.getElementById('registrationForm').style.display = 'block';
         document.getElementById('adminPassword').value = '';
     }
 
     async function loadAdminData() {
-        console.log('✅ بارگذاری اطلاعات مدیریت');
         try {
             const regResponse = await fetchWithTimeout(API_BASE + '/admin/registrations', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ password: '1234' })
             });
-            
-            if (!regResponse.ok) {
-                const errorData = await regResponse.json();
-                throw new Error(errorData.error || 'خطا در دریافت اطلاعات');
-            }
-            
             const regData = await regResponse.json();
-
             const tbody = document.getElementById('registrationsTable');
             document.getElementById('countDisplay').textContent = regData.registrations.length;
-
             if (regData.registrations.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:20px;">هیچ ثبت‌نامی وجود ندارد</td></tr>';
             } else {
-                tbody.innerHTML = regData.registrations.map((reg, index) => `
-                    <tr>
-                        <td>${index + 1}</td>
-                        <td>${reg.firstName || ''}</td>
-                        <td>${reg.lastName || ''}</td>
-                        <td>${reg.selectedOption || ''}</td>
-                        <td>${reg.submittedAt ? new Date(reg.submittedAt).toLocaleString('fa-IR') : ''}</td>
-                    </tr>
-                `).join('');
+                var html = '';
+                for (var i = 0; i < regData.registrations.length; i++) {
+                    var reg = regData.registrations[i];
+                    var date = reg.submittedAt ? new Date(reg.submittedAt).toLocaleString('fa-IR') : '';
+                    html += '<tr><td>' + (i + 1) + '</td><td>' + (reg.firstName || '') + '</td><td>' + (reg.lastName || '') + '</td><td>' + (reg.selectedOption || '') + '</td><td>' + date + '</td></tr>';
+                }
+                tbody.innerHTML = html;
             }
-
             const statusResponse = await fetchWithTimeout(API_BASE + '/status');
             const statusData = await statusResponse.json();
-            document.getElementById('maxCapacity').value = statusData.maxCapacity || 100;
+            document.getElementById('maxCapacity').value = statusData.maxCapacity || 60;
             if (statusData.deadline) {
                 document.getElementById('deadline').value = statusData.deadline.slice(0, 16);
             }
-
         } catch (error) {
-            console.error('Load admin data error:', error);
-            if (error.name === 'AbortError') {
-                alert('❌ زمان درخواست به پایان رسید. لطفاً دوباره تلاش کنید.');
-            } else {
-                alert('❌ خطا در بارگذاری اطلاعات: ' + error.message);
-            }
+            alert('❌ خطا در بارگذاری اطلاعات');
         }
     }
 
     async function saveSettings() {
-        console.log('✅ ذخیره تنظیمات');
         const maxCapacity = document.getElementById('maxCapacity').value;
         const deadline = document.getElementById('deadline').value;
-
         if (!maxCapacity || parseInt(maxCapacity) < 1) {
             alert('ظرفیت باید عددی بزرگتر از صفر باشد.');
             return;
         }
-
         try {
             const response = await fetchWithTimeout(API_BASE + '/admin/settings', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    password: '1234',
-                    maxCapacity: parseInt(maxCapacity),
-                    deadline: deadline || ''
-                })
+                body: JSON.stringify({ password: '1234', maxCapacity: parseInt(maxCapacity), deadline: deadline || '' })
             });
             const data = await response.json();
-
             if (response.ok) {
                 alert('✅ تنظیمات با موفقیت ذخیره شد!');
-                await checkStatus();
+                checkStatus();
             } else {
                 alert('❌ ' + data.error);
             }
         } catch (error) {
-            if (error.name === 'AbortError') {
-                alert('❌ زمان درخواست به پایان رسید. دوباره تلاش کنید.');
-            } else {
-                alert('❌ خطا در ذخیره تنظیمات: ' + error.message);
-            }
+            alert('❌ خطا در ذخیره تنظیمات');
         }
     }
 
     async function exportExcel() {
-        console.log('✅ خروجی Excel');
         try {
             const response = await fetchWithTimeout(API_BASE + '/admin/export', {
                 method: 'POST',
@@ -726,97 +594,38 @@
                 body: JSON.stringify({ password: '1234' })
             });
             const data = await response.json();
-
-            if (!response.ok) {
-                alert('❌ ' + data.error);
-                return;
-            }
-
             if (data.registrations.length === 0) {
                 alert('هیچ داده‌ای برای خروجی وجود ندارد.');
                 return;
             }
-
-            let csv = 'ردیف,نام,نام خانوادگی,روز شرکت,زمان ثبت\n';
-            data.registrations.forEach((reg, index) => {
-                const date = reg.submittedAt ? new Date(reg.submittedAt).toLocaleString('fa-IR') : '';
-                csv += `${index+1},${reg.firstName || ''},${reg.lastName || ''},${reg.selectedOption || ''},${date}\n`;
-            });
-
-            const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement('a');
+            var csv = 'ردیف,نام,نام خانوادگی,روز شرکت,زمان ثبت\n';
+            for (var i = 0; i < data.registrations.length; i++) {
+                var reg = data.registrations[i];
+                var date = reg.submittedAt ? new Date(reg.submittedAt).toLocaleString('fa-IR') : '';
+                csv += (i + 1) + ',' + (reg.firstName || '') + ',' + (reg.lastName || '') + ',' + (reg.selectedOption || '') + ',' + date + '\n';
+            }
+            var blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+            var link = document.createElement('a');
             link.href = URL.createObjectURL(blob);
-            link.download = `registrations_${new Date().toISOString().slice(0,10)}.csv`;
+            link.download = 'registrations_' + new Date().toISOString().slice(0,10) + '.csv';
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
-
         } catch (error) {
-            if (error.name === 'AbortError') {
-                alert('❌ زمان درخواست به پایان رسید. دوباره تلاش کنید.');
-            } else {
-                alert('❌ خطا در خروجی: ' + error.message);
-            }
+            alert('❌ خطا در خروجی');
         }
     }
 
-    // ============================================
-    // اتصال همه دکمه‌ها بعد از بارگذاری کامل صفحه
-    // ============================================
     document.addEventListener('DOMContentLoaded', function() {
-        console.log('✅ صفحه بارگذاری شد، اتصال دکمه‌ها...');
-        
-        // دکمه ثبت‌نام
-        const submitBtn = document.getElementById('submitBtn');
-        if (submitBtn) {
-            submitBtn.addEventListener('click', submitRegistration);
-            console.log('✅ دکمه ثبت‌نام متصل شد');
-        }
-
-        // لینک ورود به پنل مدیریت
-        const adminLink = document.getElementById('adminLoginLink');
-        if (adminLink) {
-            adminLink.addEventListener('click', showAdminLogin);
-            console.log('✅ لینک ورود به پنل متصل شد');
-        }
-
-        // دکمه ورود به پنل مدیریت
-        const adminLoginBtn = document.getElementById('adminLoginBtn');
-        if (adminLoginBtn) {
-            adminLoginBtn.addEventListener('click', checkAdminLogin);
-            console.log('✅ دکمه ورود به پنل متصل شد');
-        }
-
-        // دکمه خروج از پنل
-        const logoutBtn = document.getElementById('logoutBtn');
-        if (logoutBtn) {
-            logoutBtn.addEventListener('click', logoutAdmin);
-            console.log('✅ دکمه خروج متصل شد');
-        }
-
-        // دکمه ذخیره تنظیمات
-        const saveSettingsBtn = document.getElementById('saveSettingsBtn');
-        if (saveSettingsBtn) {
-            saveSettingsBtn.addEventListener('click', saveSettings);
-            console.log('✅ دکمه ذخیره تنظیمات متصل شد');
-        }
-
-        // دکمه خروجی Excel
-        const exportBtn = document.getElementById('exportBtn');
-        if (exportBtn) {
-            exportBtn.addEventListener('click', exportExcel);
-            console.log('✅ دکمه خروجی Excel متصل شد');
-        }
-
-        // تست API و بارگذاری اولیه
-        testAPI().then(() => {
-            checkStatus();
-        });
+        document.getElementById('submitBtn').addEventListener('click', submitRegistration);
+        document.getElementById('adminLoginLink').addEventListener('click', showAdminLogin);
+        document.getElementById('adminLoginBtn').addEventListener('click', checkAdminLogin);
+        document.getElementById('logoutBtn').addEventListener('click', logoutAdmin);
+        document.getElementById('saveSettingsBtn').addEventListener('click', saveSettings);
+        document.getElementById('exportBtn').addEventListener('click', exportExcel);
+        checkStatus();
     });
 
-    // ============================================
-    // KEYBOARD SHORTCUT
-    // ============================================
     document.addEventListener('keydown', function(e) {
         if (e.ctrlKey && e.shiftKey && (e.key === 'A' || e.key === 'a')) {
             e.preventDefault();
@@ -824,10 +633,7 @@
         }
     });
 
-    console.log('🔐 سیستم ثبت‌نام آنلاین بارگذاری شد.');
-    console.log('📋 برای ورود به پنل مدیریت از Ctrl+Shift+A استفاده کنید.');
-    console.log('🌐 API Base:', API_BASE);
+    console.log('🚀 سیستم فوق‌سریع بارگذاری شد!');
 </script>
-
 </body>
 </html>
