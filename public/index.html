@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>سیستم ثبت‌نام آنلاین</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; display: flex; justify-content: center; align-items: center; padding: 20px; }
+        .container { background: white; border-radius: 20px; padding: 40px; max-width: 800px; width: 100%; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+        h1 { text-align: center; color: #333; margin-bottom: 30px; font-size: 28px; }
+        .form-group { margin-bottom: 20px; }
+        label { display: block; font-weight: 600; margin-bottom: 5px; color: #555; }
+        input, select { width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 10px; font-size: 16px; transition: 0.3s; }
+        input:focus, select:focus { border-color: #667eea; outline: none; box-shadow: 0 0 0 3px rgba(102,126,234,0.1); }
+        .btn { width: 100%; padding: 14px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 10px; font-size: 18px; font-weight: 600; cursor: pointer; transition: 0.3s; }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 5px 20px rgba(102,126,234,0.4); }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+        .message { margin-top: 20px; padding: 15px; border-radius: 10px; display: none; font-weight: 500; }
+        .message.success { display: block; background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .message.error { display: block; background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .message.warning { display: block; background: #fff3cd; color: #856404; border: 1px solid #ffeeba; }
+        .admin-link { text-align: center; margin-top: 20px; }
+        .admin-link a { color: #667eea; text-decoration: none; font-weight: 600; cursor: pointer; }
+        .admin-link a:hover { text-decoration: underline; }
+        .admin-panel { display: none; }
+        .admin-panel.active { display: block; }
+        .admin-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
+        .admin-header h2 { color: #333; }
+        .btn-small { padding: 8px 16px; background: #dc3545; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; }
+        .btn-small:hover { background: #c82333; }
+        .btn-small.green { background: #28a745; }
+        .btn-small.green:hover { background: #218838; }
+        .settings-box { background: #f8f9fa; padding: 20px; border-radius: 10px; margin-bottom: 20px; }
+        .settings-box .form-group { display: inline-block; width: 48%; margin-right: 2%; }
+        .settings-box .form-group:last-child { margin-right: 0; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 14px; }
+        th { background: #667eea; color: white; padding: 12px; text-align: right; }
+        td { padding: 10px 12px; border-bottom: 1px solid #ddd; }
+        tr:hover { background: #f5f5f5; }
+        .login-box { text-align: center; padding: 30px 0; }
+        .login-box input { max-width: 300px; margin: 10px auto; }
+        @media (max-width: 600px) { .settings-box .form-group { width: 100%; margin-right: 0; } .container { padding: 20px; } }
+        .badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+        .badge-open { background: #d4edda; color: #155724; }
+        .badge-closed { background: #f8d7da; color: #721c24; }
+    </style>
+</head>
+<body>
+
+<div class="container" id="app">
+    <!-- Registration Form -->
+    <div id="registrationForm">
+        <h1>📋 فرم ثبت‌نام</h1>
+        
+        <div id="statusMessage" class="message"></div>
+        
+        <div class="form-group">
+            <label>نام</label>
+            <input type="text" id="firstName" placeholder="مثال: آریا" />
+        </div>
+        <div class="form-group">
+            <label>نام خانوادگی</label>
+            <input type="text" id="lastName" placeholder="مثال: دانشمندی" />
+        </div>
+        
+        <!-- سوال جدید: روز شرکت در عصر بازی -->
+        <div class="form-group">
+            <label>چه روزی در عصر بازی شرکت می‌کنی؟</label>
+            <select id="selectedOption">
+                <option value="یکشنبه">یکشنبه</option>
+                <option value="سه‌شنبه">سه‌شنبه</option>
+            </select>
+        </div>
+        
+        <button class="btn" id="submitBtn" onclick="submitRegistration()">ثبت‌نام</button>
+        
+        <div class="admin-link">
+            <a onclick="showAdminLogin()">🔐 ورود به پنل مدیریت</a>
+        </div>
+        
+        <div style="text-align:center;margin-top:15px;font-size:14px;color:#888;">
+            <span id="statusBadge"></span>
+        </div>
+    </div>
+
+    <!-- Admin Panel -->
+    <div id="adminPanel" class="admin-panel">
+        <div class="admin-header">
+            <h2>👑 پنل مدیریت</h2>
+            <button class="btn-small" onclick="logoutAdmin()">خروج</button>
+        </div>
+
+        <div id="adminLogin" class="login-box">
+            <h3>ورود به پنل مدیریت</h3>
+            <input type="password" id="adminPassword" placeholder="رمز عبور را وارد کنید" />
+            <button class="btn" style="max-width:200px;margin:10px auto;" onclick="checkAdminLogin()">ورود</button>
+        </div>
+
+        <div id="adminDashboard" style="display:none;">
+            <div class="settings-box">
+                <h3>⚙️ تنظیمات سیستم</h3>
+                <div class="form-group">
+                    <label>ظرفیت ثبت‌نام</label>
+                    <input type="number" id="maxCapacity" min="1" />
+                </div>
+                <div class="form-group">
+                    <label>تاریخ انقضا</label>
+                    <input type="datetime-local" id="deadline" />
+                </div>
+                <button class="btn" style="margin-top:10px;" onclick="saveSettings()">ذخیره تنظیمات</button>
+            </div>
+
+            <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+                <h3>📊 لیست ثبت‌نام‌کنندگان (<span id="countDisplay">0</span> نفر)</h3>
+                <button class="btn-small green" onclick="exportExcel()">📥 خروجی Excel</button>
+            </div>
+            <div style="overflow-x:auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>نام</th>
+                            <th>نام خانوادگی</th>
+                            <th>روز شرکت</th>
+                            <th>زمان ثبت</th>
+                        </tr>
+                    </thead>
+                    <tbody id="registrationsTable">
+                        <tr><td colspan="5" style="text-align:center;">در حال بارگذاری...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const API_BASE = window.location.origin + '/api';
+
+    function getDeviceId() {
+        let deviceId = localStorage.getItem('deviceId');
+        if (!deviceId) {
+            deviceId = 'device_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            localStorage.setItem('deviceId', deviceId);
+        }
+        return deviceId;
+    }
+
+    async function checkStatus() {
+        try {
+            const response = await fetch(API_BASE + '/status');
+            const data = await response.json();
+            
+            const badge = document.getElementById('statusBadge');
+            if (data.open) {
+                badge.innerHTML = `<span class="badge badge-open">✅ ثبت‌نام باز است (${data.currentCount}/${data.maxCapacity})</span>`;
+                document.getElementById('submitBtn').disabled = false;
+            } else {
+                badge.innerHTML = `<span class="badge badge-closed">⛔ ${data.reason}</span>`;
+                document.getElementById('submitBtn').disabled = true;
+                showMessage('⛔ ' + data.reason, 'warning');
+            }
+        } catch (error) {
+            console.error('Error checking status:', error);
+            showMessage('❌ خطا در ارتباط با سرور!', 'error');
+        }
+    }
+
+    async function submitRegistration() {
+        const firstName = document.getElementById('firstName').value;
+        const lastName = document.getElementById('lastName').value;
+        const selectedOption = document.getElementById('selectedOption').value;
+        const messageEl = document.getElementById('statusMessage');
+
+        messageEl.className = 'message';
+        messageEl.style.display = 'none';
+
+        if (!firstName.trim() || !lastName.trim()) {
+            showMessage('لطفاً نام و نام خانوادگی را وارد کنید.', 'error');
+            return;
+        }
+
+        const submitBtn = document.getElementById('submitBtn');
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'در حال ثبت...';
+
+        try {
+            const response = await fetch(API_BASE + '/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    firstName: firstName.trim(),
+                    lastName: lastName.trim(),
+                    selectedOption: selectedOption,
+                    deviceId: getDeviceId()
+                })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                showMessage('✅ ثبت‌نام شما با موفقیت انجام شد!', 'success');
+                document.getElementById('firstName').value = '';
+                document.getElementById('lastName').value = '';
+                checkStatus();
+            } else {
+                showMessage('❌ ' + data.error, 'error');
+            }
+        } catch (error) {
+            showMessage('❌ خطا در ارتباط با سرور!', 'error');
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'ثبت‌نام';
+        }
+    }
+
+    function showMessage(text, type) {
+        const messageEl = document.getElementById('statusMessage');
+        messageEl.textContent = text;
+        messageEl.className = 'message ' + type;
+        messageEl.style.display = 'block';
+        setTimeout(() => { messageEl.style.display = 'none'; }, 6000);
+    }
+
+    function showAdminLogin() {
+        document.getElementById('registrationForm').style.display = 'none';
+        document.getElementById('adminPanel').classList.add('active');
+        document.getElementById('adminLogin').style.display = 'block';
+        document.getElementById('adminDashboard').style.display = 'none';
+    }
+
+    async function checkAdminLogin() {
+        const password = document.getElementById('adminPassword').value;
+        if (password !== '1234') {
+            alert('رمز عبور اشتباه است!');
+            return;
+        }
+
+        document.getElementById('adminLogin').style.display = 'none';
+        document.getElementById('adminDashboard').style.display = 'block';
+        await loadAdminData();
+    }
+
+    function logoutAdmin() {
+        document.getElementById('adminPanel').classList.remove('active');
+        document.getElementById('registrationForm').style.display = 'block';
+        document.getElementById('adminPassword').value = '';
+    }
+
+    async function loadAdminData() {
+        try {
+            const regResponse = await fetch(API_BASE + '/admin/registrations', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ password: '1234' })
+            });
+            const regData = await regResponse.json();
+
+            const tbody = document.getElementById('registrationsTable');
+            document.getElementById('countDisplay').textContent = regData.registrations.length;
+
+            if (regData.registrations.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">هیچ ثبت‌نامی وجود ندارد</td></tr>';
+            } else {
+                tbody.innerHTML = regData.registrations.map((reg, index) => `
+                    <tr>
+                        <td>${index + 1}</td>
+                        <td>${reg.firstName}</td>
+                        <td>${reg.lastName}</td>
+                        <td>${reg.selectedOption}</td>
+                        <td>${new Date(reg.submittedAt).toLocaleString('fa-IR')}</td>
+                    </tr>
+                `).join('');
+            }
+
+            const statusResponse = await fetch(API_BASE + '/status');
+            const statusData = await statusResponse.json();
+            document.getElementById('maxCapacity').value = statusData.maxCapacity || 100;
+            if (statusData.deadline) {
+                document.getElementById('deadline').value = statusData.deadline.slice(0, 16);
+            }
+
+        } catch (error) {
+            alert('❌ خطا در بارگذاری اطلاعات: ' + error.message);
+        }
+    }
+
+    async function saveSettings() {
+        const maxCapacity = document.getElementById('maxCapacity').value;
+        const deadline = document.getElementById('deadline').value;
+
+        if (!maxCapacity || parseInt(maxCapacity) < 1) {
+            alert('ظرفیت باید عددی بزرگتر از صفر باشد.');
+            return;
+        }
+
+        try {
+            const response = await fetch(API_BASE + '/admin/settings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    password: '1234',
+                    maxCapacity: parseInt(maxCapacity),
+                    deadline: deadline || ''
+                })
+            });
+            const data = await response.json();
+
+            if (response.ok) {
+                alert('✅ تنظیمات با موفقیت ذخیره شد!');
+                checkStatus();
+            } else {
+                alert('❌ ' + data.error);
+            }
+        } catch (error) {
+            alert('❌ خطا در ذخیره تنظیمات: ' + error.message);
+        }
+    }
+
+    async function exportExcel() {
+        try {
+            const response = await fetch(API_BASE + '/admin/export', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ password: '1234' })
+            });
+            const data = await response.json();
+
+            if (!response.ok) {
+                alert('❌ ' + data.error);
+                return;
+            }
+
+            if (data.registrations.length === 0) {
+                alert('هیچ داده‌ای برای خروجی وجود ندارد.');
+                return;
+            }
+
+            let csv = 'ردیف,نام,نام خانوادگی,روز شرکت,زمان ثبت\n';
+            data.registrations.forEach((reg, index) => {
+                const date = new Date(reg.submittedAt).toLocaleString('fa-IR');
+                csv += `${index+1},${reg.firstName},${reg.lastName},${reg.selectedOption},${date}\n`;
+            });
+
+            const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `registrations_${new Date().toISOString().slice(0,10)}.csv`;
+            link.click();
+
+        } catch (error) {
+            alert('❌ خطا در خروجی: ' + error.message);
+        }
+    }
+
+    document.addEventListener('keydown', function(e) {
+        if (e.ctrlKey && e.shiftKey && (e.key === 'A' || e.key === 'a')) {
+            e.preventDefault();
+            showAdminLogin();
+        }
+    });
+
+    checkStatus();
+    console.log('🔐 سیستم ثبت‌نام آنلاین (نسخه سروری) بارگذاری شد.');
+</script>
+
+</body>
+</html>
